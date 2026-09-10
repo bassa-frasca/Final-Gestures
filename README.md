@@ -180,10 +180,11 @@ Flagging it rather than quietly relabelling everything MIT.
 
 ## Star glyphs
 
-The figure stars of the seventeen told constellations wear a decorative glyph —
-gold for the zodiac, grey-blue for the circumpolar five — while the rest of the sky
-stays plain white dots. That contrast is what makes the told constellations findable
-in a full naked-eye star field.
+The figure stars of the **twelve zodiac** constellations wear a decorative gold
+glyph. Everything else — the five circumpolar figures included — stays plain white
+dots. The five keep their lines, names and stories; only the decoration is reserved
+for the zodiac, so the twelve the project is actually about are the ones that stand
+out, and the northern sky does not compete with them.
 
 The system comes from `tools/star-glyphs.json`, supplied with the design. It defines:
 

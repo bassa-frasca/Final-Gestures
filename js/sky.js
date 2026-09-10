@@ -748,13 +748,16 @@ const Sky = (() => {
       drawStar(ctx, p, s.m, scale,
         starDim * edgeFade * limitFade * (muted ? 0.4 : 1), tw);
 
-      // Figure stars of a told constellation also carry a decorative glyph.
-      if (state.showGlyphs && s.g && owner) {
+      // Glyphs mark the zodiac only. The five circumpolar figures keep their lines,
+      // names and stories, but their stars are drawn plain — which reserves the
+      // decorated look for the twelve the project is actually about, and stops the
+      // northern sky from competing with them.
+      if (state.showGlyphs && s.g && owner && owner.group === 'zodiac') {
         const px = glyphScaleFromMag(s.m) * GLYPH_BASE_PX * scale * glyphZoom * tw;
         const rPx = Math.max(GLYPH_PX_MIN, Math.min(GLYPH_PX_MAX * glyphZoom, px));
         glyphCandidates.push({
           id: s.g, x: p.x, y: p.y, r: rPx, mag: s.m,
-          tint: owner.group === 'circumpolar' ? [176, 196, 222] : [236, 212, 148],
+          tint: [236, 212, 148],
           alpha: starDim * edgeFade * limitFade * (muted ? 0.3 : 0.92),
         });
       }
