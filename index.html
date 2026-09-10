@@ -143,6 +143,20 @@
       <button id="panelBtn" class="panel-btn" aria-expanded="false" aria-controls="panel">
         Explore
       </button>
+      <button id="gestureBtn" class="panel-btn gesture-btn" aria-pressed="false" aria-controls="gesturePanel">
+        Hand control
+      </button>
+    </div>
+
+    <!-- Hand-control camera preview + status. Hidden and inert until the visitor
+         opts in via the button above; js/gestures.js owns everything inside it. -->
+    <div id="gesturePanel" class="gesture-panel" hidden>
+      <div class="gesture-preview">
+        <video id="gestureVideo" autoplay playsinline muted></video>
+        <canvas id="gestureOverlay" width="200" height="150"></canvas>
+      </div>
+      <p class="gesture-status" id="gestureStatus">Loading hand tracker…</p>
+      <p class="gesture-hint">move hand to look around · pinch then open fast to zoom in (reverse to zoom out) · fold fingers to pause</p>
     </div>
 
     <!-- Scene switcher: an authoring control, not part of the experience. Its
@@ -261,5 +275,8 @@
 <script src="js/astro.js"></script>
 <script src="js/sky.js"></script>
 <script src="js/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="js/gestures.js"></script>
 </body>
 </html>
