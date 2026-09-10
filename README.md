@@ -206,12 +206,19 @@ where this project's IAU figures carry more vertices the ranks legitimately diff
 **The spec file carries no artwork**, only ids and radii; the artwork arrived
 separately and lives in `assets/glyphs/` — see below.
 
-Glyph size follows the zoom, but only part way. Anchoring them to an angular size
-swelled them into stickers the moment you zoomed in; pinning them to a fixed screen
-size left them crowding each other when pulled back to the whole sky, which is the
-wider and denser view. So the size tracks the zoom with a damped exponent and hard
-limits at both ends — around 21px across for the largest glyph at the widest field,
-27px at the default, 40px closed in on a single figure. Turn them off entirely under
+Size follows the zoom, but only part way, and the same rule governs the star dots so
+the picture scales as one rather than the decoration growing while the stars stay
+put. Anchoring to a true angular size swells everything into blobs the moment you
+zoom in; pinning to a fixed screen size leaves the sky crowded when pulled back,
+which is the wider and denser view. So size tracks the zoom with a damped exponent
+and hard limits at both ends.
+
+Stars and glyphs take different floors, because they had different problems. The
+glyphs were genuinely too big pulled back, so they may shrink to 0.8× below their
+default — the largest is about 21px across at the widest field, 27px at the default,
+40px closed in on one figure. The star dots never were, and the wide view is exactly
+where you want to take in the whole sky, so they are floored at their current size:
+they grow to 1.5× as you close in and never shrink. Turn glyphs off entirely under
 *What you can see*.
 
 ### The artwork

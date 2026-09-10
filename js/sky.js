@@ -398,19 +398,29 @@ const Sky = (() => {
   const GLYPH_PX_MIN = 2.2, GLYPH_PX_MAX = 13;
 
   /*
-   * Glyphs follow the zoom, but only part way. Anchoring them to an angular size
-   * swelled them into stickers the moment you zoomed in; pinning them to a fixed
-   * screen size left them crowding each other when zoomed out, which is the wider,
-   * denser view. So the size tracks the zoom with a damped exponent and hard limits
-   * at both ends: they shrink when you pull back to the whole sky, grow when you
-   * close in on one figure, and never run away in either direction.
+   * How drawn things scale with the zoom. Applied to both the stars and the glyphs,
+   * so that closing in on a figure enlarges the whole picture together rather than
+   * growing the decoration while the stars stay put.
+   *
+   * It follows the zoom only part way. Anchoring to a true angular size swells
+   * everything into blobs the moment you zoom in; pinning to a fixed screen size
+   * leaves the sky crowded when you pull back, which is the wider, denser view. So
+   * the size tracks the zoom with a damped exponent and hard limits at both ends.
+   *
+   * Stars and glyphs use different floors, because they had different problems.
+   * The glyphs were genuinely too big pulled back and are allowed to shrink below
+   * their default. The star dots never were, and the wide view is exactly where you
+   * want to take in the whole sky — thinning them there would only make it emptier.
+   * So stars are floored at their current size and can grow but never shrink.
    */
-  const GLYPH_ZOOM_DAMPING = 0.6;
-  const GLYPH_ZOOM_MIN = 0.6, GLYPH_ZOOM_MAX = 1.5;
+  const ZOOM_SIZE_DAMPING = 0.6;
+  const ZOOM_SIZE_MAX = 1.5;
+  const ZOOM_SIZE_MIN_GLYPH = 0.6;
+  const ZOOM_SIZE_MIN_STAR = 1.0;
 
-  function glyphZoomFactor(fovDeg) {
-    const f = Math.pow(REFERENCE_FOV / Math.max(1, fovDeg), GLYPH_ZOOM_DAMPING);
-    return Math.max(GLYPH_ZOOM_MIN, Math.min(GLYPH_ZOOM_MAX, f));
+  function zoomSizeFactor(fovDeg, minFactor = ZOOM_SIZE_MIN_GLYPH) {
+    const f = Math.pow(REFERENCE_FOV / Math.max(1, fovDeg), ZOOM_SIZE_DAMPING);
+    return Math.max(minFactor, Math.min(ZOOM_SIZE_MAX, f));
   }
 
   /* --- the supplied artwork ------------------------------------------------ *
@@ -709,7 +719,9 @@ const Sky = (() => {
     /* ---- stars ---- */
     const now = anim ? anim.t : 0;
     const glyphCandidates = [];
-    const glyphZoom = glyphZoomFactor(view.fovDeg);
+    // Glyphs may shrink when pulled back; stars only ever grow.
+    const zoomSize = zoomSizeFactor(view.fovDeg);
+    const starScale = scale * zoomSizeFactor(view.fovDeg, ZOOM_SIZE_MIN_STAR);
     for (let i = 0; i < data.stars.length; i++) {
       const s = data.stars[i];
       const hz = starAltAz[i];
@@ -745,7 +757,7 @@ const Sky = (() => {
       }
       const edgeFade = Math.min(1, (p.depth - 0.04) * 4);
       const muted = state.selected && (!owner || owner.abbrev !== state.selected);
-      drawStar(ctx, p, s.m, scale,
+      drawStar(ctx, p, s.m, starScale,
         starDim * edgeFade * limitFade * (muted ? 0.4 : 1), tw);
 
       // Glyphs mark the zodiac only. The five circumpolar figures keep their lines,
@@ -753,8 +765,8 @@ const Sky = (() => {
       // decorated look for the twelve the project is actually about, and stops the
       // northern sky from competing with them.
       if (state.showGlyphs && s.g && owner && owner.group === 'zodiac') {
-        const px = glyphScaleFromMag(s.m) * GLYPH_BASE_PX * scale * glyphZoom * tw;
-        const rPx = Math.max(GLYPH_PX_MIN, Math.min(GLYPH_PX_MAX * glyphZoom, px));
+        const px = glyphScaleFromMag(s.m) * GLYPH_BASE_PX * scale * zoomSize * tw;
+        const rPx = Math.max(GLYPH_PX_MIN, Math.min(GLYPH_PX_MAX * zoomSize, px));
         glyphCandidates.push({
           id: s.g, x: p.x, y: p.y, r: rPx, mag: s.m,
           tint: [236, 212, 148],
@@ -763,7 +775,7 @@ const Sky = (() => {
       }
       // Only stars in a told constellation can open a story; the rest are
       // hoverable for their name but not clickable through to a panel.
-      hit.stars.push({ x: p.x, y: p.y, r: starRadius(s.m, scale), star: s,
+      hit.stars.push({ x: p.x, y: p.y, r: starRadius(s.m, starScale), star: s,
                        conAbbrev: owner ? s.c : null });
 
       const named = /^[A-Z][a-z]/.test(s.n);
@@ -936,6 +948,6 @@ const Sky = (() => {
   }
 
   return { render, pick, project, makeView, starRadius, galacticToEquatorial,
-           drawGlyph, glyphScaleFromMag, glyphZoomFactor, preloadGlyphs, glyphArt,
+           drawGlyph, glyphScaleFromMag, zoomSizeFactor, preloadGlyphs, glyphArt,
            COMPASS };
 })();
