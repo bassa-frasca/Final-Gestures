@@ -18,13 +18,13 @@
 
   <!-- ------------------------------------------------------------ the sky -->
   <div class="skybox">
-    <!-- Deep-space footage behind the live sky. assets/nebula.jpg is the poster, so
-         a still shows while the video loads and stands in if it cannot play at all.
+    <!-- Deep-space footage behind the live sky. No poster: the first frame stands in
+         while the loop loads, and the page ground shows through until it does.
          muted + playsinline are required or browsers refuse to autoplay.
          See the README for how the loop is cut down from the source footage. -->
     <div id="backdrop" class="backdrop" aria-hidden="true">
       <video id="backdropMedia" class="backdrop-media"
-             src="assets/backdrop.mp4" poster="assets/nebula.jpg"
+             src="assets/backdrop.mp4"
              autoplay loop muted playsinline preload="auto"></video>
     </div>
 
@@ -35,6 +35,20 @@
          instead, one at a time, over the same backdrop video. -->
     <div id="zodiacScene" class="zodiac-scene" hidden aria-live="polite">
       <div class="zodiac-track" id="zodiacTrack"></div>
+
+      <!-- The gate. Revealed once scene 1 has finished speaking, so the question is
+           asked aloud before the choices appear, and then nothing moves until the
+           visitor answers. Answering is what advances to the birth-date scene. -->
+      <div class="zodiac-gate" id="zodiacGate" hidden>
+        <p class="zodiac-gate-q">Ready to know your zodiac?</p>
+        <div class="bd-choices">
+          <button type="button" class="bd-choice" data-answer="yes">Yes</button>
+          <button type="button" class="bd-choice" data-answer="hell yeah">Hell yeah</button>
+        </div>
+        <!-- Filled in by JS, so it only ever claims to be listening when the mic is
+             genuinely open. The buttons stay either way. -->
+        <p class="zodiac-gate-hint" id="zodiacGateHint" aria-live="polite"></p>
+      </div>
     </div>
 
     <!-- Scene 2 only: ask for a birth date, then hold on "analysing" once it's
@@ -67,10 +81,21 @@
          background — not revealed yet, just present — while the card prompt
          plays over it. Same take-over as scenes 1 and 2. -->
     <div id="cardScene" class="card-scene" hidden aria-live="polite">
+      <!-- Camera preview. Small and in the corner: enough for the visitor to see
+           that the card is being looked at and to aim it, without becoming the
+           thing on screen. The card-detection model can read frames straight off
+           this element (window.__sky.cameraStream also exposes the stream). -->
+      <div class="card-cam" id="cardCam" hidden>
+        <video id="cardCamVideo" class="card-cam-video" autoplay muted playsinline></video>
+        <p class="card-cam-label" id="cardCamLabel">looking&hellip;</p>
+      </div>
+
       <div class="card-art" id="cardArt" aria-hidden="true"></div>
       <div class="card-text">
         <p class="card-sub">Stars have all your answers now..</p>
-        <p class="card-title">Pull up the card 2</p>
+        <!-- Filled in by renderCardScene with the shape number for the detected
+             sign, so it is never showing a stale or hard-coded number. -->
+        <p class="card-title" id="cardTitle"></p>
         <p class="card-hint">tap to continue</p>
       </div>
     </div>
@@ -177,6 +202,7 @@
           <label class="chk"><input type="checkbox" id="tGround"><span>Show the ground</span></label>
           <label class="chk"><input type="checkbox" id="tTwinkle"><span>Twinkling</span></label>
           <label class="chk"><input type="checkbox" id="tSceneBar"><span>Scene switcher</span></label>
+          <label class="chk"><input type="checkbox" id="tNarration"><span>Narration</span></label>
         </div>
       </details>
 

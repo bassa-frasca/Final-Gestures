@@ -362,6 +362,51 @@ input.bad { border-color: var(--bad); background: rgba(224, 115, 107, 0.14); }
 }
 .zodiac-scene[hidden] { display: none !important; }
 
+/* Sits below the slideshow rather than in the flex row, so revealing it does not
+   shove the constellation art off centre. It takes the band the fact text occupies,
+   because once the question has been asked the scene's job has changed from reading
+   about the zodiacs to answering — see .zodiac-scene.gated below. */
+.zodiac-gate {
+  position: absolute; left: 50%; bottom: 13vh;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center;
+  animation: gate-in 0.7s ease both;
+}
+
+/* With the gate up, the fact text steps aside rather than being written over.
+   The slideshow keeps cycling above it, which reads as ambient rather than busy. */
+.zodiac-scene.gated .zodiac-fact,
+.zodiac-scene.gated .zodiac-slide.active .zodiac-fact {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease;
+}
+.zodiac-gate[hidden] { display: none !important; }
+.zodiac-gate-q {
+  margin: 0;
+  font: 700 clamp(22px, 2.2vw, 30px) "Libre Bodoni", serif;
+  color: #fff; text-shadow: 0 1px 14px rgba(0, 0, 0, 0.7);
+}
+.zodiac-gate-hint {
+  margin: 16px 0 0; min-height: 1.2em;
+  font: 400 13.5px "EB Garamond", serif; font-style: italic;
+  color: rgba(255, 255, 255, 0.5);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.7);
+  display: flex; align-items: center; gap: 8px;
+}
+/* A quiet pulse while the mic is open, so it is visible that something is
+   listening rather than the line just asserting it. */
+.zodiac-gate-hint.live::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
+  background: #5fd39a; box-shadow: 0 0 8px rgba(95, 211, 154, 0.9);
+  animation: gate-mic 1.8s ease-in-out infinite;
+}
+@keyframes gate-mic { 50% { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { .zodiac-gate-hint.live::before { animation: none; } }
+
+@keyframes gate-in { from { opacity: 0; transform: translateX(-50%) translateY(10px); } }
+@media (prefers-reduced-motion: reduce) { .zodiac-gate { animation: none; } }
+
 .zodiac-track {
   display: flex; align-items: center; gap: 7vw;
   padding: 0 4px;
@@ -387,13 +432,16 @@ input.bad { border-color: var(--bad); background: rgba(224, 115, 107, 0.14); }
 .zodiac-card {
   margin: 0; padding: 10px 22px;
   color: rgba(255, 255, 255, 0.75);
-  font: 700 22px/1 "Libre Bodoni", serif;
+  /* Display type, so it scales with the viewport rather than sitting at one fixed
+     size: the floor keeps it readable on a laptop, the ceiling stops it swallowing
+     the artwork on a large screen. */
+  font: 700 clamp(20px, 2.5vw, 32px)/1 "Libre Bodoni", serif;
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
   transition: color 0.9s ease;
 }
 .zodiac-slide.active .zodiac-card {
   color: #fff;
-  font-size: 30px;
+  font-size: clamp(32px, 3.7vw, 50px);
 }
 
 .zodiac-art { width: 100%; height: auto; max-height: 42vh; object-fit: contain; }
@@ -420,7 +468,52 @@ input.bad { border-color: var(--bad); background: rgba(224, 115, 107, 0.14); }
 }
 
 @media (max-width: 640px) {
-  .zodiac-track { gap: 10vw; }
+  /* Sits below the slideshow rather than in the flex row, so revealing it does not
+   shove the constellation art off centre. It takes the band the fact text occupies,
+   because once the question has been asked the scene's job has changed from reading
+   about the zodiacs to answering — see .zodiac-scene.gated below. */
+.zodiac-gate {
+  position: absolute; left: 50%; bottom: 13vh;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center;
+  animation: gate-in 0.7s ease both;
+}
+
+/* With the gate up, the fact text steps aside rather than being written over.
+   The slideshow keeps cycling above it, which reads as ambient rather than busy. */
+.zodiac-scene.gated .zodiac-fact,
+.zodiac-scene.gated .zodiac-slide.active .zodiac-fact {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease;
+}
+.zodiac-gate[hidden] { display: none !important; }
+.zodiac-gate-q {
+  margin: 0;
+  font: 700 clamp(22px, 2.2vw, 30px) "Libre Bodoni", serif;
+  color: #fff; text-shadow: 0 1px 14px rgba(0, 0, 0, 0.7);
+}
+.zodiac-gate-hint {
+  margin: 16px 0 0; min-height: 1.2em;
+  font: 400 13.5px "EB Garamond", serif; font-style: italic;
+  color: rgba(255, 255, 255, 0.5);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.7);
+  display: flex; align-items: center; gap: 8px;
+}
+/* A quiet pulse while the mic is open, so it is visible that something is
+   listening rather than the line just asserting it. */
+.zodiac-gate-hint.live::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
+  background: #5fd39a; box-shadow: 0 0 8px rgba(95, 211, 154, 0.9);
+  animation: gate-mic 1.8s ease-in-out infinite;
+}
+@keyframes gate-mic { 50% { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { .zodiac-gate-hint.live::before { animation: none; } }
+
+@keyframes gate-in { from { opacity: 0; transform: translateX(-50%) translateY(10px); } }
+@media (prefers-reduced-motion: reduce) { .zodiac-gate { animation: none; } }
+
+.zodiac-track { gap: 10vw; }
   .zodiac-fact { font-size: 13px; width: min(280px, 82vw); }
   .zodiac-card { font-size: 17px; padding: 8px 16px; }
   .zodiac-slide.active .zodiac-card { font-size: 22px; }
@@ -517,8 +610,33 @@ input.bad { border-color: var(--bad); background: rgba(224, 115, 107, 0.14); }
   margin: 0 0 6px;
   font: 500 15px "EB Garamond", serif; color: rgba(255, 255, 255, 0.75);
 }
+/* The ready gate. Deliberately the same type as the birth-date question that
+   follows it, so answering feels like moving along one conversation. */
+.bd-choices { display: flex; gap: 14px; margin-top: 26px; flex-wrap: wrap; justify-content: center; }
+.bd-choice {
+  padding: 12px 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  font: 500 clamp(17px, 1.6vw, 22px) "EB Garamond", serif;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+}
+.bd-choice:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+.bd-choice:focus-visible { outline: 2px solid #7fb0dd; outline-offset: 2px; }
+.bd-listening {
+  margin: 20px 0 0; font: 400 14px "EB Garamond", serif; font-style: italic;
+  color: rgba(255, 255, 255, 0.45);
+}
+
 .bd-title {
-  margin: 0; font: 700 34px "Libre Bodoni", serif; color: #fff;
+  margin: 0; font: 700 clamp(32px, 3.7vw, 50px) "Libre Bodoni", serif; color: #fff;
   text-shadow: 0 1px 14px rgba(0, 0, 0, 0.6);
 }
 
@@ -528,7 +646,32 @@ input.bad { border-color: var(--bad); background: rgba(224, 115, 107, 0.14); }
 
 @media (max-width: 640px) {
   .bd-question { font-size: 20px; max-width: 88%; }
-  .bd-title { font-size: 24px; }
+  /* The ready gate. Deliberately the same type as the birth-date question that
+   follows it, so answering feels like moving along one conversation. */
+.bd-choices { display: flex; gap: 14px; margin-top: 26px; flex-wrap: wrap; justify-content: center; }
+.bd-choice {
+  padding: 12px 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  font: 500 clamp(17px, 1.6vw, 22px) "EB Garamond", serif;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+}
+.bd-choice:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+.bd-choice:focus-visible { outline: 2px solid #7fb0dd; outline-offset: 2px; }
+.bd-listening {
+  margin: 20px 0 0; font: 400 14px "EB Garamond", serif; font-style: italic;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.bd-title { font-size: 24px; }
   .bd-eyebrow { font-size: 13px; }
   .bd-glyph { width: clamp(90px, 26vw, 160px); }
   .bd-analyzing { gap: 4vw; }
@@ -544,6 +687,44 @@ input.bad { border-color: var(--bad); background: rgba(224, 115, 107, 0.14); }
   display: flex; align-items: center; justify-content: center;
 }
 .card-scene[hidden] { display: none !important; }
+
+/* Mirrored horizontally, so holding a card up behaves like a mirror rather than
+   feeling reversed. */
+.card-cam {
+  position: absolute; right: 26px; bottom: 26px; z-index: 4;
+  width: clamp(140px, 15vw, 220px);
+  border-radius: 12px; overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(6, 9, 17, 0.6);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+}
+.card-cam[hidden] { display: none !important; }
+.card-cam-video {
+  display: block; width: 100%; height: auto;
+  aspect-ratio: 4 / 3; object-fit: cover;
+  transform: scaleX(-1);
+}
+.card-cam-label {
+  margin: 0; padding: 5px 9px;
+  font: 400 11px "EB Garamond", serif; font-style: italic;
+  color: rgba(255, 255, 255, 0.6);
+  display: flex; align-items: center; gap: 7px;
+}
+.card-cam-label::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: #5fd39a; box-shadow: 0 0 7px rgba(95, 211, 154, 0.9);
+  animation: card-cam-live 1.8s ease-in-out infinite;
+}
+/* No dot when the camera is not actually running, so the indicator never
+   claims more than is true. */
+.card-scene[data-camera="blocked"] .card-cam-label::before,
+.card-scene[data-camera="unsupported"] .card-cam-label::before { display: none; }
+@keyframes card-cam-live { 50% { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { .card-cam-label::before { animation: none; } }
+
+@media (max-width: 640px) {
+  .card-cam { right: 12px; bottom: 12px; width: 116px; }
+}
 
 .card-art {
   display: flex; align-items: center; justify-content: center;
@@ -585,7 +766,7 @@ input.bad { border-color: var(--bad); background: rgba(224, 115, 107, 0.14); }
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
 }
 .card-title {
-  margin: 0; font: 700 40px "Libre Bodoni", serif; color: #fff;
+  margin: 0; font: 700 clamp(34px, 4.1vw, 56px) "Libre Bodoni", serif; color: #fff;
   text-shadow: 0 1px 16px rgba(0, 0, 0, 0.65);
 }
 /* Stands in for the card-detection model a friend is wiring up separately —
@@ -619,7 +800,7 @@ input.bad { border-color: var(--bad); background: rgba(224, 115, 107, 0.14); }
 .reveal-scene[hidden] { display: none !important; }
 
 .reveal-card {
-  margin: 0; font: 700 40px "Libre Bodoni", serif; color: #fff;
+  margin: 0; font: 700 clamp(34px, 4.1vw, 56px) "Libre Bodoni", serif; color: #fff;
   text-shadow: 0 1px 16px rgba(0, 0, 0, 0.65);
 }
 

@@ -40,6 +40,58 @@
       intent: 'Zoom back in on the constellation while text speaks about it. The figure may take the shape of its animal or creature and move in very slow motion.' },
   ];
 
+  /*
+   * Narration. Each scene has a list of clips played one after another, so a scene
+   * that says two things says them in order rather than over itself.
+   *
+   * Scene 4 is not listed because it depends on the sign, and the topic readings
+   * (topic_<sign>_<love|work|friendship>.mp3) are not listed because nothing yet
+   * chooses a topic — see the note in assets/sounds about what is still unwired.
+   */
+  const SOUND_DIR = 'assets/sounds/';
+  const NARRATION = {
+    // Scene 1 welcomes them and then asks whether they are ready. The gate appears
+    // when it has finished speaking, and answering is what moves them on.
+    1: ['scene-1-welcome.mp3', 'scene-2-ready-ornot.mp3'],
+    2: ['scene-2-ask forbday.mp3'],
+    5: ['seq_04_topic_offer.mp3', 'seq_05_explore_intro.mp3'],
+    6: ['seq_06_outro.mp3'],
+  };
+
+  // What counts as saying yes. Kept loose because people answer a question like
+  // this with whatever comes out, and a gate that only accepts one word is a gate
+  // that strands them.
+  const AFFIRMATIVES = [
+    'hell yeah', 'hell yes', 'yes', 'yeah', 'yep', 'yup', 'sure',
+    'go on', 'go ahead', 'absolutely', 'of course', 'please', 'ok', 'okay',
+  ];
+
+  // Scene 4's reveal, per sign. Only five signs have been recorded so far; the
+  // rest fall through to silence rather than to the wrong sign's voice.
+  const REVEAL_CLIPS = {
+    Ari: 'reveal_aries.mp3', Tau: 'reveal_taurus.mp3', Gem: 'reveal_gemini.mp3',
+    Cnc: 'reveal_cancer.mp3', Lib: 'reveal_libra.mp3',
+  };
+
+  /*
+   * Scene 3's shape-pick line, per sign. The recorded set is the same five as the
+   * reveals, and the file numbers confirm the mapping: 01-04 are Aries to Cancer
+   * and 07 is Libra, i.e. the shape number from the cue table. Listed rather than
+   * derived from the number so an unrecorded sign is silent instead of a 404.
+   */
+  const SHAPE_PICK_CLIPS = {
+    Ari: 'shape_pick_01.mp3', Tau: 'shape_pick_02.mp3', Gem: 'shape_pick_03.mp3',
+    Cnc: 'shape_pick_04.mp3', Lib: 'shape_pick_07.mp3',
+  };
+
+  /**
+   * The shape number a sign maps to, from the cue table: Aries is 1 through Pisces
+   * is 12. That is exactly the order the Sun travels through them, which is the
+   * order ZODIAC_ORDER already holds, so the number is its position rather than a
+   * second table to keep in step with the first.
+   */
+  const shapeNumberFor = (abbrev) => ZODIAC_ORDER.indexOf(abbrev) + 1;
+
   // Zodiac in the order the Sun travels through them, which is how the signs are
   // always taught — not by brightness or by what happens to be up.
   const ZODIAC_ORDER = ['Ari', 'Tau', 'Gem', 'Cnc', 'Leo', 'Vir',
@@ -52,7 +104,8 @@
     Leo: '05-leo', Vir: '06-virgo', Lib: '07-libra', Sco: '08-scorpius',
     Sgr: '09-sagittarius', Cap: '10-capricornus', Aqr: '11-aquarius', Psc: '12-pisces',
   };
-  const ZODIAC_SLIDE_MS = 6000;
+  // How long each zodiac holds before the slideshow moves on.
+  const ZODIAC_SLIDE_MS = 5000;
 
   // Tropical zodiac boundaries — western convention, sign holds from the first
   // date to the day before the next sign's first date.
@@ -121,6 +174,7 @@
     birthdateStep: 'ask',
     birthDate: null,
     detectedZodiac: null,
+    narration: true,
   };
 
   let data = null, frame = null, computed = null;
@@ -322,6 +376,232 @@
     draw();
   }
 
+  /* ------------------------------------------------------------ narration --- */
+
+  /*
+   * One audio element, reused. A single element cannot overlap itself, which is the
+   * behaviour we want: a scene's clips are a sequence, and leaving a scene should
+   * cut its voice off rather than let it talk over the next one.
+   *
+   * Browsers refuse to play audible sound until the page has had a genuine user
+   * gesture, so play() can be rejected. In practice a visitor reaches these scenes
+   * by tapping, which counts — but landing straight on ?scene=1 does not, so a
+   * rejection arms a one-shot listener and starts the moment they touch anything.
+   */
+  let narrator = null;
+  let narrationQueue = [];
+  let narrationToken = 0;      // invalidates callbacks from a scene we have left
+  let narrationArmed = false;
+  let narrationWatchdog = null;
+
+  // If a clip's own duration is unknown, assume no line runs longer than this.
+  const NARRATION_MAX_CLIP_MS = 20000;
+  const NARRATION_SLACK_MS = 1200;
+
+  function ensureNarrator() {
+    if (narrator) return narrator;
+    narrator = new Audio();
+    narrator.preload = 'auto';
+    return narrator;
+  }
+
+  function stopNarration() {
+    narrationToken++;
+    narrationQueue = [];
+    clearTimeout(narrationWatchdog);
+    narrationWatchdog = null;
+    if (narrator) {
+      narrator.pause();
+      narrator.onended = null;
+      narrator.onerror = null;
+      narrator.onloadedmetadata = null;
+      try { narrator.currentTime = 0; } catch { /* not seekable yet */ }
+    }
+  }
+
+  /**
+   * Play a list of clip filenames in order, then call `onDone`.
+   *
+   * `onDone` also fires when there is nothing to play — narration switched off, no
+   * clips, or the browser refusing to start. Anything that waits on the voice
+   * finishing has to happen anyway, or the visitor is stranded in front of a scene
+   * that will not move.
+   */
+  function playNarration(clips, onDone) {
+    stopNarration();
+    const finish = () => { if (typeof onDone === 'function') onDone(); };
+    if (!state.narration || !clips || !clips.length) { finish(); return; }
+
+    narrationQueue = clips.slice();
+    const token = narrationToken;
+    const audio = ensureNarrator();
+
+    const next = () => {
+      if (token !== narrationToken) return;      // scene changed under us
+      clearTimeout(narrationWatchdog);
+      const clip = narrationQueue.shift();
+      if (!clip) { finish(); return; }
+
+      // A watchdog per clip. Anything downstream of the voice — the gate on scene
+      // 1, most importantly — has to happen even if this clip never reports
+      // finishing: a missing file, a stalled network, a decode failure. Being
+      // stranded in front of a scene that will not advance is far worse than
+      // hearing the line cut a moment short.
+      const arm = (ms) => {
+        clearTimeout(narrationWatchdog);
+        narrationWatchdog = setTimeout(() => {
+          if (token === narrationToken) next();
+        }, ms);
+      };
+      arm(NARRATION_MAX_CLIP_MS);
+
+      // encodeURI, because one of the filenames contains a space.
+      audio.src = SOUND_DIR + encodeURI(clip);
+      audio.onloadedmetadata = () => {
+        if (token !== narrationToken) return;
+        if (Number.isFinite(audio.duration) && audio.duration > 0) {
+          arm(audio.duration * 1000 + NARRATION_SLACK_MS);
+        }
+      };
+      audio.onended = next;
+      // A clip that cannot load is skipped rather than being allowed to hold up
+      // everything behind it.
+      audio.onerror = () => { if (token === narrationToken) next(); };
+      audio.play().catch(() => { armNarrationOnGesture(clips); finish(); });
+    };
+    next();
+  }
+
+  /** Retry the scene's narration once the visitor gives us a gesture to work with. */
+  function armNarrationOnGesture(clips) {
+    if (narrationArmed) return;
+    narrationArmed = true;
+    const go = () => {
+      narrationArmed = false;
+      window.removeEventListener('pointerdown', go);
+      window.removeEventListener('keydown', go);
+      // Only resume if we are still on the scene that asked for these clips.
+      if (state.narration && narrationClipsFor(state.scene) === clips) playNarration(clips);
+    };
+    window.addEventListener('pointerdown', go, { once: true });
+    window.addEventListener('keydown', go, { once: true });
+  }
+
+  /** The clips a scene should speak, resolving scene 4 against the detected sign. */
+  let lastNarrationClips = null;
+  function narrationClipsFor(scene) {
+    // Scenes 3 and 4 depend on the sign, so they are resolved here rather than
+    // being listed in NARRATION.
+    if (scene === 3 || scene === 4) {
+      const abbrev = state.detectedZodiac || ZODIAC_ORDER[0];
+      const clip = (scene === 3 ? SHAPE_PICK_CLIPS : REVEAL_CLIPS)[abbrev];
+      return clip ? [clip] : [];
+    }
+    return NARRATION[scene] || [];
+  }
+
+  function startSceneNarration() {
+    const clips = narrationClipsFor(state.scene);
+    lastNarrationClips = clips;
+    const scene = state.scene;
+    playNarration(clips, () => {
+      if (state.scene !== scene) return;         // they moved on while it spoke
+      if (scene === 1) revealZodiacGate();
+    });
+  }
+
+  function revealZodiacGate() {
+    $('zodiacGate').hidden = false;
+    // Marks the scene so the fact text gets out of the gate's way.
+    $('zodiacScene').classList.add('gated');
+    startGateListening();
+  }
+  function hideZodiacGate() {
+    $('zodiacGate').hidden = true;
+    $('zodiacScene').classList.remove('gated');
+    stopGateListening();
+  }
+
+  /* ------------------------------------------------- listening at the gate --- */
+
+  /*
+   * The mic opens by itself once the question has been asked aloud, so answering
+   * out loud works without touching anything. The buttons stay regardless: the
+   * browser may refuse the microphone, the visitor may decline it, and a noisy
+   * room can defeat recognition entirely — none of which should be a dead end.
+   *
+   * Structured like startListening() for the birth date: browsers end a session
+   * on their own after a pause, so a session counter tells a session we stopped
+   * apart from one that ought to reopen the mic.
+   */
+  let gateRecognizer = null;
+  let gateListenSession = 0;
+
+  function setGateHint(text, live) {
+    const el = $('zodiacGateHint');
+    el.textContent = text || '';
+    el.classList.toggle('live', !!live);
+  }
+
+  function startGateListening() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { setGateHint('', false); return; }   // no voice here; buttons only
+
+    const session = ++gateListenSession;
+    let answered = false;
+
+    const listenOnce = () => {
+      gateRecognizer = new SR();
+      gateRecognizer.lang = 'en-US';
+      gateRecognizer.continuous = true;
+      gateRecognizer.interimResults = false;
+      gateRecognizer.maxAlternatives = 3;
+
+      gateRecognizer.onresult = (e) => {
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const alts = [...e.results[i]].map((r) => r.transcript);
+          if (alts.some(isAffirmative)) {
+            answered = true;
+            setGateHint(`Heard “${alts[0].trim()}”`, false);
+            try { gateRecognizer.stop(); } catch { /* already stopping */ }
+            acceptReady();
+            return;
+          }
+        }
+      };
+
+      gateRecognizer.onerror = (e) => {
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+          answered = true;   // reopening the mic will not change their mind
+          setGateHint('Microphone blocked — tap an answer instead', false);
+        }
+        // no-speech and network hiccups fall through to onend, which reopens.
+      };
+
+      gateRecognizer.onend = () => {
+        // Stop if answered, superseded, or the gate is no longer the thing on screen.
+        if (answered || session !== gateListenSession) return;
+        if (state.scene !== 1 || $('zodiacGate').hidden) return;
+        listenOnce();
+      };
+
+      try { gateRecognizer.start(); }
+      catch { setGateHint('', false); }   // already started, or blocked outright
+    };
+
+    setGateHint('Listening — say yes, or tap', true);
+    listenOnce();
+  }
+
+  function stopGateListening() {
+    gateListenSession++;
+    if (gateRecognizer) {
+      try { gateRecognizer.abort(); } catch { /* already done */ }
+      gateRecognizer = null;
+    }
+    setGateHint('', false);
+  }
+
   /**
    * Scenes 1-4 take over from the ordinary sky: the star canvas and its HUD
    * hide (the backdrop video keeps playing underneath, untouched) and that
@@ -341,9 +621,13 @@
     $('cardScene').hidden = !cardScene;
     $('revealScene').hidden = !revealScene;
     if (zodiacScene) startZodiacSlideshow(); else stopZodiacSlideshow();
+    // Always enter scene 1 ungated: the gate is earned by the narration finishing.
+    hideZodiacGate();
     if (birthdateScene) startBirthdateScene(); else stopBirthdateScene();
     if (cardScene) renderCardScene();
+    if (cardScene) startCamera(); else stopCamera();
     if (revealScene) renderRevealScene();
+    startSceneNarration();
   }
 
   /* ------------------------------------------------------- zodiac scene --- */
@@ -522,10 +806,95 @@
     bdSetHeard('');
     setBirthdateStep('ask');
   }
+
+  /**
+   * They said yes on the zodiacs screen. Move to the birth-date scene, which asks
+   * for the date aloud as it opens. Guarded on the gate being up, so a double tap
+   * only advances once.
+   */
+  function acceptReady() {
+    if (state.scene !== 1 || $('zodiacGate').hidden) return;
+    hideZodiacGate();      // also releases the microphone
+    setScene(2);
+  }
+
+  const isAffirmative = (text) => {
+    const t = (text || '').toLowerCase().trim();
+    return AFFIRMATIVES.some((w) => t === w || t.includes(w));
+  };
   function stopBirthdateScene() {
     clearTimeout(bdAdvanceTimer);
     bdListenSession++;
     if (bdRecognizer) { bdRecognizer.abort(); bdRecognizer = null; }
+  }
+
+  /* ------------------------------------------------------------- camera --- */
+
+  /*
+   * The camera opens with scene 3, because that is the scene where a card is held
+   * up to be recognised, and closes again the moment the scene ends. Nothing here
+   * records or uploads anything: the stream feeds a preview element so the visitor
+   * can see the card is being looked at, and is exposed on window.__sky for the
+   * card-detection model to read frames from.
+   *
+   * Releasing it matters. A getUserMedia stream keeps the camera light on and the
+   * device claimed until every track is stopped, so leaving the scene stops them
+   * rather than relying on the page being closed.
+   */
+  let cameraStream = null;
+  let cameraSession = 0;
+
+  function setCameraState(scene, state_, label) {
+    scene.dataset.camera = state_;
+    if (label !== undefined) $('cardCamLabel').textContent = label;
+  }
+
+  async function startCamera() {
+    const scene = $('cardScene');
+    const session = ++cameraSession;
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setCameraState(scene, 'unsupported', 'no camera here');
+      $('cardCam').hidden = true;
+      return;
+    }
+
+    $('cardCam').hidden = false;
+    setCameraState(scene, 'starting', 'looking…');
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,   // the microphone belongs to the gate, not to this
+      });
+      // They may have left the scene during the permission prompt, which can sit
+      // there indefinitely — in that case hand the camera straight back.
+      if (session !== cameraSession || state.scene !== 3) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+      cameraStream = stream;
+      const video = $('cardCamVideo');
+      video.srcObject = stream;
+      try { await video.play(); } catch { /* autoplay of a muted stream, fine */ }
+      setCameraState(scene, 'live', 'looking…');
+    } catch (err) {
+      if (session !== cameraSession) return;
+      const denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
+      setCameraState(scene, 'blocked', denied ? 'camera blocked' : 'no camera found');
+    }
+  }
+
+  function stopCamera() {
+    cameraSession++;
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((t) => t.stop());
+      cameraStream = null;
+    }
+    const video = $('cardCamVideo');
+    if (video) video.srcObject = null;
+    $('cardCam').hidden = true;
+    delete $('cardScene').dataset.camera;
   }
 
   /* --------------------------------------------------------- card scene --- */
@@ -540,6 +909,9 @@
   // file opaquely and can't be reached from CSS or JS.
   async function renderCardScene() {
     const abbrev = state.detectedZodiac || ZODIAC_ORDER[0];
+    // Set before the early return below, so the number is right even when the art
+    // is already the sign being shown.
+    $('cardTitle').textContent = `Pick the shape ${shapeNumberFor(abbrev)}`;
     const art = $('cardArt');
     if (art.dataset.abbrev === abbrev) return; // already showing this sign
     art.dataset.abbrev = abbrev;
@@ -987,6 +1359,11 @@
       if (pill) setScene(Number(pill.dataset.scene));
     });
 
+    /* --- the ready gate (scene 2) --- */
+    for (const btn of document.querySelectorAll('.bd-choice')) {
+      btn.addEventListener('click', acceptReady);
+    }
+
     /* --- the zodiac slideshow (scene 1) --- */
     buildZodiacTrack();
     $('zodiacTrack').addEventListener('click', (e) => {
@@ -1101,6 +1478,7 @@
       showLabels: 'tLabels', showStarNames: 'tStarNames', showMilkyWay: 'tMilkyWay',
       showBackdrop: 'tBackdrop', showGround: 'tGround',
       showGlyphs: 'tGlyphs', twinkle: 'tTwinkle', showSceneBar: 'tSceneBar',
+      narration: 'tNarration',
     };
     for (const [key, id] of Object.entries(toggles)) {
       const el = $(id);
@@ -1108,6 +1486,9 @@
       el.addEventListener('change', () => {
         state[key] = el.checked;
         if (key === 'showBackdrop') syncBackdrop();
+        if (key === 'narration') {
+          if (state.narration) startSceneNarration(); else stopNarration();
+        }
         draw();
       });
     }
@@ -1160,6 +1541,9 @@
         case '-': case '_': state.fov = clampFov(state.fov + 8); draw(); break;
         case ' ': e.preventDefault(); $('playBtn').click(); break;
         case 'n': case 'N': goLive(); break;
+        case 'Enter': case 'y': case 'Y':
+          acceptReady();     // no-ops unless the gate is up on scene 1
+          break;
         case '[': setScene(state.scene - 1); break;
         case ']': setScene(state.scene + 1); break;
         default:
@@ -1364,7 +1748,12 @@
 
   window.__sky = { state, get data() { return data; }, get frame() { return frame; },
                    get computed() { return computed; }, computeSky, draw, lookAt, select,
-                   openingMoment, DARK_ENOUGH, SCENES, setScene };
+                   openingMoment, DARK_ENOUGH, SCENES, setScene,
+                   NARRATION, REVEAL_CLIPS, narrationClipsFor, playNarration, stopNarration,
+                   acceptReady, isAffirmative, AFFIRMATIVES,
+                   startGateListening, stopGateListening,
+                   SHAPE_PICK_CLIPS, shapeNumberFor,
+                   get cameraStream() { return cameraStream; }, startCamera, stopCamera };
 
   document.addEventListener('DOMContentLoaded', boot);
 })();

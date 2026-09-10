@@ -257,8 +257,8 @@ same size on screen).
 Behind the live sky runs a loop of deep-space footage, `assets/backdrop.mp4`, blurred
 and semi-transparent. It fades out as the Sun rises so it never shows through a
 daylit sky, holds still if you have asked for reduced motion, and can be switched off
-under *What you can see*. `assets/nebula.jpg` is its poster, so a still shows while
-the video loads and stands in if it cannot play at all.
+under *What you can see*. There is no poster image: the first frame stands in while
+the loop loads.
 
 A whisper of blur (0.8px) takes the hard edge off the footage's own painted stars,
 which would otherwise read as a second star field competing with the real catalogue
@@ -278,11 +278,16 @@ avconvert --source videoplayback.mp4 --output assets/backdrop.mp4 \
           --preset PresetPassthrough --start 522 --duration 72 --replace
 ```
 
-The shipped loop is 72 seconds for 26 MB, and it plays at **half speed** — set by
-`BACKDROP_RATE` in `js/app.js`. Slowing it costs nothing, makes the drift calm enough
-to sit behind a star chart without pulling the eye, and doubles how long the loop
-takes to come round: 72 seconds of footage becomes a two-and-a-half-minute cycle.
-That rate is the cheapest lever by far — reach for it before cutting a longer clip.
+The shipped loop is **3 min 54 s at 1920x1080, 90 MB**, and it plays at **half
+speed** — set by `BACKDROP_RATE` in `js/app.js`. Slowing it costs nothing, makes the
+drift calm enough to sit behind a star chart without pulling the eye, and doubles how
+long the loop takes to come round, so the cycle is nearly eight minutes and never
+reads as a repeat. That rate is the cheapest lever by far — reach for it before
+cutting a longer clip.
+
+At 90 MB this sits close to GitHub's hard 100 MB per-file limit, and every version
+committed stays in history for good. If it ever needs to shrink, `PresetPassthrough`
+below trims it without touching quality.
 
 Two things worth knowing when choosing `--start`. Bitrate varies a lot by passage,
 so where you cut changes the file size at identical quality: 90 seconds costs 26 MB
