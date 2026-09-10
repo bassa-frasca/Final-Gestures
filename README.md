@@ -11,11 +11,17 @@ Click any constellation and the view turns to face it and tells you its story.
 Default location is **Bergamo, Italy** (45.695° N, 9.670° E, Europe/Rome), but the
 place can be changed to anywhere on Earth.
 
+**Live: <https://roshnidesigns.github.io/Tales-from-Stars/>**
+
 ![the twelve of the zodiac and the five that never set](docs/screenshot.png)
 
 ## Running it
 
-No build step and no dependencies to install.
+It is live at <https://roshnidesigns.github.io/Tales-from-Stars/>, served straight
+from `main` by GitHub Pages — `.nojekyll` keeps Jekyll from touching the static
+files.
+
+Locally there is no build step and nothing to install.
 
 ```bash
 python3 -m http.server 8000
