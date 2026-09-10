@@ -60,6 +60,12 @@
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (prefersReducedMotion) state.twinkle = false;
 
+  // The backdrop footage plays at half speed. Slowing it costs nothing, makes the
+  // drift calm enough to sit behind a star chart without pulling the eye, and
+  // doubles how long the loop takes to come round — a 72-second clip becomes a
+  // two-and-a-half-minute cycle, which is what stops it reading as a short cut.
+  const BACKDROP_RATE = 0.5;
+
   /* --------------------------------------------------------- data loading --- */
 
   async function loadData() {
@@ -713,11 +719,28 @@
     $('backdrop').hidden = !state.showBackdrop;
     const media = $('backdropMedia');
     if (media && typeof media.play === 'function') {
+      // Re-applied here as well as on load: some browsers reset the rate when a
+      // media element is paused and resumed.
+      media.playbackRate = BACKDROP_RATE;
+      media.defaultPlaybackRate = BACKDROP_RATE;
       // Hold the footage still for anyone who has asked for reduced motion, and
       // stop it decoding at all while the layer is hidden.
       if (!state.showBackdrop || prefersReducedMotion) media.pause();
       else media.play().catch(armBackdropOnInteraction);
     }
+  }
+
+  /** Hold the slow rate from the moment the element is ready. */
+  function initBackdropRate() {
+    const media = $('backdropMedia');
+    if (!media || typeof media.play !== 'function') return;
+    media.defaultPlaybackRate = BACKDROP_RATE;
+    media.playbackRate = BACKDROP_RATE;
+    media.addEventListener('loadedmetadata', () => {
+      media.playbackRate = BACKDROP_RATE;
+    });
+    // A loop restart is another moment browsers can drop back to 1x.
+    media.addEventListener('seeked', () => { media.playbackRate = BACKDROP_RATE; });
   }
 
   /**
@@ -863,6 +886,7 @@
     }
     fillLocationInputs();
     syncTimeInputs();
+    initBackdropRate();
     wire();
     // Redraw once the glyph artwork lands; until then the code-drawn shapes stand in.
     Sky.preloadGlyphs(() => draw());

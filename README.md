@@ -268,20 +268,30 @@ carry a glow, and wear glyphs — so the backdrop can stay sharp and legibly its
 ### Cutting the loop down
 
 The source footage is 1920×1080, forty minutes long, 909 MB — far past GitHub's
-100 MB per-file limit. But a short cut of it is small without giving up anything,
-because `PresetPassthrough` copies the streams instead of re-encoding them: the loop
-is bit-identical to the source, at full 1920×1080, and a 24-second cut is 21 MB.
-macOS can do this with nothing installed:
+100 MB per-file limit. But a cut of it is small without giving up anything, because
+`PresetPassthrough` copies the streams instead of re-encoding them: the loop is
+bit-identical to the source at full 1920×1080. macOS can do this with nothing
+installed:
 
 ```bash
 avconvert --source videoplayback.mp4 --output assets/backdrop.mp4 \
-          --preset PresetPassthrough --start 600 --duration 24 --replace
+          --preset PresetPassthrough --start 522 --duration 72 --replace
 ```
 
-`--start` picks the moment to cut from, `--duration` how long the loop runs; halve
-the duration to halve the file. Reach for a re-encoding preset
-(`Preset1280x720` and friends) only if you actually want a smaller frame — they cost
-real quality, and they can *raise* the bitrate well above the source's.
+The shipped loop is 72 seconds for 26 MB, and it plays at **half speed** — set by
+`BACKDROP_RATE` in `js/app.js`. Slowing it costs nothing, makes the drift calm enough
+to sit behind a star chart without pulling the eye, and doubles how long the loop
+takes to come round: 72 seconds of footage becomes a two-and-a-half-minute cycle.
+That rate is the cheapest lever by far — reach for it before cutting a longer clip.
+
+Two things worth knowing when choosing `--start`. Bitrate varies a lot by passage,
+so where you cut changes the file size at identical quality: 90 seconds costs 26 MB
+from one part of this footage and 47 MB from another. And the footage drifts between
+a warm pink nebula and a cool blue one, with the pink stretch running only about
+520–600s, so a longer cut can cross the transition and make the loop seam a visible
+colour jump. Reach for a re-encoding preset (`Preset1280x720` and friends) only if
+you actually want a smaller frame — they cost real quality, and can *raise* the
+bitrate well above the source's.
 
 Passthrough cuts land on keyframes, so the start may snap by a fraction of a second.
 With ffmpeg available, a crossfade between the loop's head and tail would hide the
