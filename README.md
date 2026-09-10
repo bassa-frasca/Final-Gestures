@@ -191,9 +191,13 @@ where this project's IAU figures carry more vertices the ranks legitimately diff
 **The spec file carries no artwork**, only ids and radii; the artwork arrived
 separately and lives in `assets/glyphs/` — see below.
 
-Glyphs hold a constant size on screen rather than a constant angular size: they are
-accents on a chart, not objects in the sky, and sizing them in degrees made them
-swell into stickers the moment you zoomed in. Turn them off under *What you can see*.
+Glyph size follows the zoom, but only part way. Anchoring them to an angular size
+swelled them into stickers the moment you zoomed in; pinning them to a fixed screen
+size left them crowding each other when pulled back to the whole sky, which is the
+wider and denser view. So the size tracks the zoom with a damped exponent and hard
+limits at both ends — around 21px across for the largest glyph at the widest field,
+27px at the default, 40px closed in on a single figure. Turn them off entirely under
+*What you can see*.
 
 ### The artwork
 

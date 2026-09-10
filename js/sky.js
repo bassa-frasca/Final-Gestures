@@ -393,12 +393,25 @@ const Sky = (() => {
    * Swapping in real artwork means replacing these seven cases and nothing else.
    */
 
-  // Pixel length of one unit glyph radius at scale 1. Glyphs are deliberately NOT
-  // anchored to an angular size: they are decorative accents on the chart, not
-  // objects in the sky, so they hold a constant size on screen. Sizing them in
-  // degrees instead made them swell into stickers as soon as you zoomed in.
-  const GLYPH_BASE_PX = 38;
-  const GLYPH_PX_MIN = 2.4, GLYPH_PX_MAX = 21;
+  // Pixel length of one unit glyph radius at scale 1.
+  const GLYPH_BASE_PX = 22;
+  const GLYPH_PX_MIN = 2.2, GLYPH_PX_MAX = 13;
+
+  /*
+   * Glyphs follow the zoom, but only part way. Anchoring them to an angular size
+   * swelled them into stickers the moment you zoomed in; pinning them to a fixed
+   * screen size left them crowding each other when zoomed out, which is the wider,
+   * denser view. So the size tracks the zoom with a damped exponent and hard limits
+   * at both ends: they shrink when you pull back to the whole sky, grow when you
+   * close in on one figure, and never run away in either direction.
+   */
+  const GLYPH_ZOOM_DAMPING = 0.6;
+  const GLYPH_ZOOM_MIN = 0.6, GLYPH_ZOOM_MAX = 1.5;
+
+  function glyphZoomFactor(fovDeg) {
+    const f = Math.pow(REFERENCE_FOV / Math.max(1, fovDeg), GLYPH_ZOOM_DAMPING);
+    return Math.max(GLYPH_ZOOM_MIN, Math.min(GLYPH_ZOOM_MAX, f));
+  }
 
   /* --- the supplied artwork ------------------------------------------------ *
    * assets/glyphs/ holds the real glyphs: SVG as the source of truth and a 512px
@@ -608,7 +621,7 @@ const Sky = (() => {
       const outer = c.r * ((outerRadius[c.id] || 100) / 100);
       let clash = false;
       for (const p of placed) {
-        if (Math.hypot(c.x - p.x, c.y - p.y) < 0.62 * (outer + p.outer)) { clash = true; break; }
+        if (Math.hypot(c.x - p.x, c.y - p.y) < 0.68 * (outer + p.outer)) { clash = true; break; }
       }
       if (clash) continue;
       placed.push({ x: c.x, y: c.y, outer });
@@ -696,6 +709,7 @@ const Sky = (() => {
     /* ---- stars ---- */
     const now = anim ? anim.t : 0;
     const glyphCandidates = [];
+    const glyphZoom = glyphZoomFactor(view.fovDeg);
     for (let i = 0; i < data.stars.length; i++) {
       const s = data.stars[i];
       const hz = starAltAz[i];
@@ -736,8 +750,8 @@ const Sky = (() => {
 
       // Figure stars of a told constellation also carry a decorative glyph.
       if (state.showGlyphs && s.g && owner) {
-        const px = glyphScaleFromMag(s.m) * GLYPH_BASE_PX * scale * tw;
-        const rPx = Math.max(GLYPH_PX_MIN, Math.min(GLYPH_PX_MAX, px));
+        const px = glyphScaleFromMag(s.m) * GLYPH_BASE_PX * scale * glyphZoom * tw;
+        const rPx = Math.max(GLYPH_PX_MIN, Math.min(GLYPH_PX_MAX * glyphZoom, px));
         glyphCandidates.push({
           id: s.g, x: p.x, y: p.y, r: rPx, mag: s.m,
           tint: owner.group === 'circumpolar' ? [176, 196, 222] : [236, 212, 148],
@@ -919,5 +933,6 @@ const Sky = (() => {
   }
 
   return { render, pick, project, makeView, starRadius, galacticToEquatorial,
-           drawGlyph, glyphScaleFromMag, preloadGlyphs, glyphArt, COMPASS };
+           drawGlyph, glyphScaleFromMag, glyphZoomFactor, preloadGlyphs, glyphArt,
+           COMPASS };
 })();
