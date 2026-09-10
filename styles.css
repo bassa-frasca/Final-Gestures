@@ -60,12 +60,12 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: cover;
-  opacity: 0.72;
-  /* The plate holds no fine detail worth keeping, so a real blur costs nothing and
-     removes the gradient dithering that otherwise shows as a faint crosshatch once
-     the image is scaled up. It also keeps the plate reading as depth rather than
-     competing with the real stars drawn on top of it. */
-  filter: blur(2.5px) saturate(1.08);
+  opacity: 0.62;
+  /* The footage is full of its own painted stars, which would read as a second,
+     fictional star field fighting the real catalogue drawn on top. A firm blur
+     melts them into pure colour and depth, which is all the backdrop is for — and
+     it is why the loop can be 640x360 without anyone noticing. */
+  filter: blur(4px) saturate(1.06);
   transform: scale(1.06);
   animation: drift 90s ease-in-out infinite alternate;
 }
@@ -157,24 +157,16 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 
 .hud-b { bottom: 0; left: 0; right: 0; }
 .tline {
-  display: flex; align-items: flex-end; gap: 20px;
-  padding: 22px 24px 18px;
-  background: linear-gradient(180deg, transparent, rgba(3, 5, 10, 0.86) 55%);
+  display: flex; align-items: center; gap: 22px;
+  padding: 26px 24px 16px;
+  background: linear-gradient(180deg, transparent, rgba(3, 5, 10, 0.82) 60%);
 }
 .tslider { flex: 1 1 0; min-width: 0; }
-.tlabel {
-  display: block; font-size: 10px; text-transform: uppercase;
-  letter-spacing: 0.1em; color: var(--ink-3); font-weight: 600; margin-bottom: 5px;
-}
-.tlabel b {
-  color: var(--ink); text-transform: none; letter-spacing: 0;
-  font-size: 12.5px; font-weight: 500; margin-left: 5px;
-}
 .tbtns { display: flex; gap: 7px; align-items: center; flex: 0 0 auto; }
 
 input[type="range"] {
   -webkit-appearance: none; appearance: none;
-  width: 100%; height: 18px; background: transparent; cursor: pointer; display: block;
+  width: 100%; height: 26px; background: transparent; cursor: pointer; display: block;
 }
 input[type="range"]::-webkit-slider-runnable-track {
   height: 3px; border-radius: 2px;
@@ -393,8 +385,8 @@ input.bad { border-color: var(--bad); background: rgba(224, 115, 107, 0.14); }
   .phrase { font-size: 12px; max-width: 250px; }
   .phrase.moon { display: none; }
 
-  .tline { flex-wrap: wrap; gap: 12px; padding: 18px 14px 14px; }
+  .tline { flex-wrap: wrap; gap: 4px 12px; padding: 18px 14px 12px; }
   .tslider { flex-basis: 100%; }
-  .tbtns { width: 100%; }
+  .tbtns { width: 100%; margin-top: 4px; }
   .tbtns .sel { flex: 1 1 0; }
 }

@@ -358,10 +358,12 @@
     syncing = true;
     const p = Astro.zonedParts(state.date, state.tz);
     $('hourSlider').value = String(p.hour * 60 + p.minute);
-    $('hourReadout').textContent = fmtClock(state.date);
     $('daySlider').value = String(dayOfYear(p.year, p.month, p.day));
-    $('dayReadout').textContent = new Intl.DateTimeFormat('en-GB',
-      { timeZone: state.tz, day: 'numeric', month: 'long' }).format(state.date);
+    // The sliders carry no visible readout: the clock and date in the corner are
+    // the single source of truth, and repeating them under the sliders was noise.
+    $('hourSlider').title = `Time of night — ${fmtClock(state.date)}`;
+    $('daySlider').title = `Time of year — ${new Intl.DateTimeFormat('en-GB',
+      { timeZone: state.tz, day: 'numeric', month: 'long' }).format(state.date)}`;
     syncing = false;
   }
 
@@ -706,6 +708,33 @@
   /** The plate is a DOM layer, so it is shown or hidden outside the canvas draw. */
   function syncBackdrop() {
     $('backdrop').hidden = !state.showBackdrop;
+    const media = $('backdropMedia');
+    if (media && typeof media.play === 'function') {
+      // Hold the footage still for anyone who has asked for reduced motion, and
+      // stop it decoding at all while the layer is hidden.
+      if (!state.showBackdrop || prefersReducedMotion) media.pause();
+      else media.play().catch(armBackdropOnInteraction);
+    }
+  }
+
+  /**
+   * If a browser refuses muted autoplay, the poster still shows, but the footage
+   * should start as soon as the person touches anything. One shot, then removed.
+   */
+  let backdropArmed = false;
+  function armBackdropOnInteraction() {
+    if (backdropArmed || prefersReducedMotion) return;
+    backdropArmed = true;
+    const start = () => {
+      const media = $('backdropMedia');
+      if (media && state.showBackdrop && typeof media.play === 'function') {
+        media.play().catch(() => { /* still refused; the poster is a fine fallback */ });
+      }
+      window.removeEventListener('pointerdown', start);
+      window.removeEventListener('keydown', start);
+    };
+    window.addEventListener('pointerdown', start, { once: true });
+    window.addEventListener('keydown', start, { once: true });
   }
 
   function flash(id) {

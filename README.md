@@ -40,7 +40,7 @@ The sky fills the window; everything else is an overlay that gets out of the way
 | **Look around** | Drag the sky, use `←` `→` `↑` `↓`, or the N/E/S/W buttons |
 | **Zoom** | Pinch, scroll, or `+` / `-` — 25° to 160° field of view |
 | **Look below the horizon** | Keep dragging down. Constellations that have already set stay drawn, dimmed under the ground, so you can go and find them |
-| **Scrub time** | *Time of night* and *time of year* sliders |
+| **Scrub time** | The two sliders along the bottom — time of night, then time of year |
 | **Watch it move** | `Play` — up to a week a second, to see the seasonal handoff |
 | **Back to now** | `Now`, or press `N` |
 | **Read a story** | Click a constellation or its name; double-click zooms in on it. `Esc` closes |
@@ -48,6 +48,10 @@ The sky fills the window; everything else is an overlay that gets out of the way
 | **Your sky** | City centre → dark countryside, which changes how many stars show |
 | **Star glyphs** | Decorative glyphs on the figure stars, on by default |
 | **Move location** | Anywhere on Earth, under *Where you are* |
+
+The sliders carry no labels: the clock and date in the top corner are the single
+source of truth, and repeating them under the sliders was just noise. Hovering either
+one still names it, and both keep an accessible name for screen readers.
 
 Because you can look anywhere on the sphere, the ground is drawn as a translucent
 veil rather than an opaque floor — it darkens what is beneath you the way the Earth
@@ -187,36 +191,55 @@ swell into stickers the moment you zoomed in. Turn them off under *What you can 
 
 ## The backdrop
 
-Behind the live sky sits a deep-space plate, `assets/nebula.jpg`, at partial opacity.
-It fades out as the Sun rises, so it never shows through a daylit sky, and it can be
-turned off under *What you can see*.
+Behind the live sky runs a loop of deep-space footage, `assets/backdrop.mp4`, blurred
+and semi-transparent. It fades out as the Sun rises so it never shows through a
+daylit sky, holds still if you have asked for reduced motion, and can be switched off
+under *What you can see*. `assets/nebula.jpg` is its poster, so a still shows while
+the video loads and stands in if it cannot play at all.
 
-The plate is **generated, not downloaded** — `tools/make_nebula.html` draws it from
-seeded noise, so the repo carries no third-party artwork. Regenerate or restyle it
-with:
+The blur is doing real work, not decoration: the footage is full of its own painted
+stars, which would otherwise read as a second, fictional star field fighting the real
+catalogue drawn on top. Blurring melts them into pure colour and depth — which is
+also why a 640×360 loop is indistinguishable from a 720p one here.
+
+### Cutting the loop down
+
+The source footage was 1920×1080, forty minutes long, 909 MB — far past GitHub's
+100 MB per-file limit and hopeless as a web backdrop. A twenty-second loop at 640×360
+is 8.8 MB. macOS can do this without installing anything:
+
+```bash
+avconvert --source videoplayback.mp4 --output assets/backdrop.mp4 \
+          --preset Preset640x480 --start 600 --duration 20 --replace
+```
+
+`--start` picks the moment to cut from. With ffmpeg available, a crossfade between
+the loop's head and tail would hide the seam; as it stands the cut is invisible
+enough behind a 4 px blur.
+
+`.gitignore` excludes `assets/*.mp4` with an exception for `backdrop.mp4`, so a large
+source file dropped into `assets/` can never be committed by accident.
+
+### The generated fallback plate
+
+`assets/nebula.jpg` is generated, not downloaded — `tools/make_nebula.html` draws it
+from seeded noise, so the repo carries no third-party artwork:
 
 ```bash
 chrome --headless --window-size=2560,1440 --virtual-time-budget=6000 \
        --screenshot=nebula.png tools/make_nebula.html
-sips -Z 1600 nebula.png --out nebula-small.png
-sips -s format jpeg -s formatOptions 88 nebula-small.png --out assets/nebula.jpg
+sips -Z 1600 nebula.png --out small.png
+sips -s format jpeg -s formatOptions 88 small.png --out assets/nebula.jpg
 ```
 
-It deliberately contains **no stars** — the app draws the real catalogue on top, and
-a second painted star field just reads as noise. Downsampling to 1600px is what
-removes the gradient dithering.
+It contains no stars either, for the same reason as the blur. Downsampling to 1600px
+is what removes the gradient dithering.
 
-### Using a video instead
+### Swapping the footage
 
-Swap the `<img>` in `index.html` for a `<video>` and change nothing else — the CSS
-styles both identically:
-
-```html
-<video id="backdropMedia" class="backdrop-media" src="assets/backdrop.mp4"
-       autoplay loop muted playsinline></video>
-```
-
-`muted` and `playsinline` are required, or browsers will refuse to autoplay.
+Replace `assets/backdrop.mp4`, or point the `<video>` in `index.html` somewhere else.
+`muted` and `playsinline` must stay or browsers will refuse to autoplay; if autoplay
+is refused anyway, playback starts on the first tap or keypress.
 
 ## Layout
 
@@ -229,7 +252,8 @@ js/app.js                state, interaction, and the plain-language layer
 data/stars.json          trimmed HYG extract (217 stars)
 data/constellations.json line figures plus the mythology content
 data/catalog.js          generated: both payloads as globals, so file:// works
-assets/nebula.jpg        generated backdrop plate
+assets/backdrop.mp4      the backdrop loop
+assets/nebula.jpg        generated poster / fallback plate
 tools/build_data.py      the build script
 tools/mythology.json     the story content, edit this
 tools/star-glyphs.json   the glyph spec: ids, radii, size curve
