@@ -46,6 +46,7 @@
     showStarNames: true,
     showMilkyWay: true,
     showBackdrop: true,
+    showGround: true,
     showZodiac: true,
     showCircumpolar: true,
     twinkle: true,
@@ -86,22 +87,32 @@
       const idx = new Set();
       for (const [i, j] of con.lines) { idx.add(i); idx.add(j); }
       let visible = 0, sumAlt = 0, ax = 0, ay = 0, brightest = null;
+      // A second centroid over every member star, above the horizon or not, so the
+      // view can be pointed at a constellation that has already set.
+      let allAlt = 0, allX = 0, allY = 0;
       for (const i of idx) {
         const h = starAltAz[i];
-        if (h.alt < 0) continue;
-        visible++;
-        sumAlt += h.alt;
-        ax += Math.cos(h.az * Astro.DEG);
-        ay += Math.sin(h.az * Astro.DEG);
+        allAlt += h.alt;
+        allX += Math.cos(h.az * Astro.DEG);
+        allY += Math.sin(h.az * Astro.DEG);
+        if (h.alt >= 0) {
+          visible++;
+          sumAlt += h.alt;
+          ax += Math.cos(h.az * Astro.DEG);
+          ay += Math.sin(h.az * Astro.DEG);
+        }
         const s = data.stars[i];
-        if (!brightest || s.m < brightest.m) brightest = s;
+        if (h.alt >= 0 && (!brightest || s.m < brightest.m)) brightest = s;
       }
+      const n = idx.size || 1;
       conVisible[con.abbrev] = {
         total: idx.size,
         visibleStars: visible,
         fraction: idx.size ? visible / idx.size : 0,
         centroidAlt: visible ? sumAlt / visible : -90,
         centroidAz: visible ? Astro.norm360(Math.atan2(ay, ax) * Astro.RAD) : 0,
+        anchorAlt: allAlt / n,
+        anchorAz: Astro.norm360(Math.atan2(allY, allX) * Astro.RAD),
         brightestVisible: brightest,
       };
     }
@@ -127,7 +138,9 @@
 
   /** Where a constellation sits, said the way you'd say it to someone outside. */
   function placeInSky(v) {
-    if (v.visibleStars === 0) return { short: 'not up now', long: 'below the horizon right now' };
+    if (v.visibleStars === 0) {
+      return { short: 'below you', long: 'below the horizon right now — look down to find it' };
+    }
     const alt = v.centroidAlt, dir = dirWord(v.centroidAz);
     if (alt >= 72) return { short: 'overhead', long: 'almost straight overhead' };
     if (alt >= 52) return { short: `high, ${dir}`, long: `high up towards the ${dir}` };
@@ -250,7 +263,7 @@
            : `Right now: <strong>below the horizon</strong> — try another time of night, or a different month`
       }</p>
       ${con.brightest ? `<p class="sbright">Brightest star: <strong>${con.brightest.replace(/\s*\([^)]*\)/, '')}</strong></p>` : ''}
-      ${up ? `<button id="turnTo" class="turn">Turn and look at it</button>` : ''}
+      <button id="turnTo" class="turn">${up ? 'Turn and look at it' : 'Turn towards it anyway'}</button>
       <section><h3>Mythology</h3><p>${con.myth_fact}</p></section>
       <section><h3>How it was used</h3><p>${con.ancient_use}</p></section>
       <section><h3>The story</h3><p>${con.story}</p></section>`;
@@ -259,7 +272,14 @@
     $('story').scrollTop = 0;
     $('closeStory').addEventListener('click', () => select(null));
     const turn = $('turnTo');
-    if (turn) turn.addEventListener('click', () => lookAt(v.centroidAz, v.centroidAlt));
+    if (turn) {
+      turn.addEventListener('click', () => {
+        // Point at the visible part if there is one, otherwise at the whole figure
+        // wherever it is — including below the horizon.
+        if (up) lookAt(v.centroidAz, v.centroidAlt);
+        else lookAt(v.anchorAz, v.anchorAlt);
+      });
+    }
   }
 
   function select(abbrev, alsoTurn = false) {
@@ -270,8 +290,13 @@
     if (!abbrev) {
       $('story').hidden = true;
     } else {
+      $('panel').hidden = true;
+      $('panelBtn').setAttribute('aria-expanded', 'false');
       const v = computed.conVisible[abbrev];
-      if (alsoTurn && v.visibleStars > 0) lookAt(v.centroidAz, v.centroidAlt);
+      if (alsoTurn) {
+        if (v.visibleStars > 0) lookAt(v.centroidAz, v.centroidAlt);
+        else lookAt(v.anchorAz, v.anchorAlt);
+      }
       openStory(abbrev);
     }
     draw();
@@ -284,7 +309,7 @@
     let delta = Astro.norm360(az - state.facing);
     if (delta > 180) delta -= 360;
     state.targetFacing = state.facing + delta;
-    state.targetPitch = Math.max(5, Math.min(78, alt));
+    state.targetPitch = clampPitch(alt);
     if (prefersReducedMotion) {
       state.facing = Astro.norm360(state.targetFacing);
       state.targetFacing = state.facing;
@@ -296,6 +321,11 @@
   function turnBy(deg) {
     state.targetFacing += deg;
   }
+
+  // You can look almost straight up and well below the horizon; the last few
+  // degrees at each pole are held back because the view frame degenerates there.
+  const clampPitch = (a) => Math.max(-82, Math.min(85, a));
+  const clampFov = (f) => Math.max(25, Math.min(160, f));
 
   /** Ease the view towards its target; returns true while still moving. */
   function stepView(dt) {
@@ -406,38 +436,67 @@
   function wire() {
     const canvas = $('sky');
 
-    /* --- dragging to look around --- */
+    /* --- dragging to look around, pinching to zoom --- */
+    // Active pointers are tracked by id so one finger pans and two pinch, which is
+    // what people expect on a touchscreen. A mouse just uses the single-pointer path.
+    const pointers = new Map();
+    let pinch = null;
+
     const pointerPos = (e) => {
       const r = canvas.getBoundingClientRect();
       return { x: e.clientX - r.left, y: e.clientY - r.top };
     };
+    const pinchSpan = () => {
+      const [a, b] = [...pointers.values()];
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    };
 
     canvas.addEventListener('pointerdown', (e) => {
       canvas.setPointerCapture(e.pointerId);
-      const p = pointerPos(e);
-      dragging = { ...p, startX: p.x, startY: p.y, moved: false,
-                   facing: state.targetFacing, pitch: state.targetPitch };
+      pointers.set(e.pointerId, pointerPos(e));
+      if (pointers.size === 2) {
+        // Second finger down: switch from panning to pinching.
+        dragging = null;
+        pinch = { span: pinchSpan(), fov: state.fov };
+      } else if (pointers.size === 1) {
+        const p = pointerPos(e);
+        dragging = { startX: p.x, startY: p.y, moved: false,
+                     facing: state.targetFacing, pitch: state.targetPitch };
+      }
     });
 
     canvas.addEventListener('pointermove', (e) => {
       const p = pointerPos(e);
+      if (pointers.has(e.pointerId)) pointers.set(e.pointerId, p);
+
+      if (pinch && pointers.size >= 2) {
+        const span = pinchSpan();
+        if (pinch.span > 8 && span > 8) {
+          // Spreading the fingers narrows the field of view, i.e. zooms in.
+          state.fov = clampFov(pinch.fov * (pinch.span / span));
+          draw();
+        }
+        return;
+      }
+
       if (dragging) {
         const dx = p.x - dragging.startX, dy = p.y - dragging.startY;
         if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragging.moved = true;
         // One canvas width of drag turns you through one field of view.
         const perPx = state.fov / canvas.clientWidth;
         state.targetFacing = dragging.facing - dx * perPx;
-        state.targetPitch = Math.max(5, Math.min(78, dragging.pitch + dy * perPx));
+        state.targetPitch = clampPitch(dragging.pitch + dy * perPx);
         state.facing = state.targetFacing;
         state.pitch = state.targetPitch;
         canvas.style.cursor = 'grabbing';
         draw();
         return;
       }
+
       const h = Sky.pick(frame, p.x, p.y);
       const nextHover = h ? h.abbrev : null;
       if (nextHover !== state.hovered) { state.hovered = nextHover; draw(); }
-      canvas.style.cursor = h ? 'pointer' : 'grab';
+      canvas.style.cursor = h && h.abbrev ? 'pointer' : 'grab';
 
       const tip = $('tooltip');
       if (h && h.via === 'star' && h.star) {
@@ -450,19 +509,28 @@
       } else tip.hidden = true;
     });
 
-    const endDrag = (e) => {
-      if (!dragging) return;
-      const wasClick = !dragging.moved;
-      const p = pointerPos(e);
-      dragging = null;
-      canvas.style.cursor = 'grab';
-      if (wasClick) {
-        const h = Sky.pick(frame, p.x, p.y);
-        select(h ? h.abbrev : null);
+    const releasePointer = (e, wasCancelled) => {
+      const had = pointers.has(e.pointerId);
+      pointers.delete(e.pointerId);
+      if (pointers.size < 2) pinch = null;
+      if (!had) return;
+
+      if (dragging && !wasCancelled) {
+        const wasClick = !dragging.moved;
+        const p = pointerPos(e);
+        dragging = null;
+        canvas.style.cursor = 'grab';
+        if (wasClick) {
+          const h = Sky.pick(frame, p.x, p.y);
+          select(h ? h.abbrev : null);
+        }
+      } else {
+        dragging = null;
+        canvas.style.cursor = 'grab';
       }
     };
-    canvas.addEventListener('pointerup', endDrag);
-    canvas.addEventListener('pointercancel', () => { dragging = null; });
+    canvas.addEventListener('pointerup', (e) => releasePointer(e, false));
+    canvas.addEventListener('pointercancel', (e) => releasePointer(e, true));
     canvas.addEventListener('pointerleave', () => {
       $('tooltip').hidden = true;
       if (state.hovered) { state.hovered = null; draw(); }
@@ -470,9 +538,20 @@
 
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
-      state.fov = Math.max(45, Math.min(150, state.fov + Math.sign(e.deltaY) * 6));
+      // Trackpad pinch arrives as a ctrl-modified wheel event.
+      const step = e.ctrlKey ? e.deltaY * 0.6 : Math.sign(e.deltaY) * 5;
+      state.fov = clampFov(state.fov + step);
       draw();
     }, { passive: false });
+
+    canvas.addEventListener('dblclick', (e) => {
+      // Double-click to zoom in on whatever is under the cursor.
+      const p = pointerPos(e);
+      const h = Sky.pick(frame, p.x, p.y);
+      if (h && h.abbrev) select(h.abbrev, true);
+      state.fov = clampFov(state.fov * 0.7);
+      draw();
+    });
 
     /* --- compass buttons --- */
     for (const b of document.querySelectorAll('.cbtn')) {
@@ -481,12 +560,24 @@
     $('turnLeft').addEventListener('click', () => turnBy(-45));
     $('turnRight').addEventListener('click', () => turnBy(45));
 
+    /* --- the browse and settings overlay --- */
+    const setPanel = (open) => {
+      $('panel').hidden = !open;
+      $('panelBtn').setAttribute('aria-expanded', String(open));
+      if (open) { $('story').hidden = true; state.selected = null; draw(); }
+    };
+    $('panelBtn').addEventListener('click', () => setPanel($('panel').hidden));
+    $('closePanel').addEventListener('click', () => setPanel(false));
+
     /* --- constellation lists --- */
     for (const listId of ['zodiacList', 'polarList']) {
       const el = $(listId);
       el.addEventListener('click', (e) => {
         const row = e.target.closest('[data-abbrev]');
-        if (row) select(row.dataset.abbrev, true);
+        if (!row) return;
+        $('panel').hidden = true;
+        $('panelBtn').setAttribute('aria-expanded', 'false');
+        select(row.dataset.abbrev, true);
       });
       el.addEventListener('keydown', (e) => {
         if (e.key !== 'Enter' && e.key !== ' ') return;
@@ -543,7 +634,7 @@
     const toggles = {
       showZodiac: 'tZodiac', showCircumpolar: 'tCircumpolar', showLines: 'tLines',
       showLabels: 'tLabels', showStarNames: 'tStarNames', showMilkyWay: 'tMilkyWay',
-      showBackdrop: 'tBackdrop', twinkle: 'tTwinkle',
+      showBackdrop: 'tBackdrop', showGround: 'tGround', twinkle: 'tTwinkle',
     };
     for (const [key, id] of Object.entries(toggles)) {
       const el = $(id);
@@ -588,11 +679,16 @@
     window.addEventListener('keydown', (e) => {
       if (e.target.matches('input, select, textarea')) return;
       switch (e.key) {
-        case 'Escape': select(null); break;
+        case 'Escape':
+          if (!$('panel').hidden) { $('panel').hidden = true; $('panelBtn').setAttribute('aria-expanded', 'false'); }
+          else select(null);
+          break;
         case 'ArrowLeft': turnBy(-15); break;
         case 'ArrowRight': turnBy(15); break;
-        case 'ArrowUp': state.targetPitch = Math.min(78, state.targetPitch + 8); break;
-        case 'ArrowDown': state.targetPitch = Math.max(5, state.targetPitch - 8); break;
+        case 'ArrowUp': state.targetPitch = clampPitch(state.targetPitch + 8); break;
+        case 'ArrowDown': state.targetPitch = clampPitch(state.targetPitch - 8); break;
+        case '+': case '=': state.fov = clampFov(state.fov - 8); draw(); break;
+        case '-': case '_': state.fov = clampFov(state.fov + 8); draw(); break;
         case ' ': e.preventDefault(); $('playBtn').click(); break;
         case 'n': case 'N': goLive(); break;
       }

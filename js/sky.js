@@ -91,6 +91,11 @@ const Sky = (() => {
    * vertically, so the horizon always stays reachable.
    */
   function makeView(w, h, facingAz, pitchAlt, fovDeg, bottomInset = 0) {
+    // Clamp here as well as at the input handlers: a degenerate field of view
+    // renders nonsense, and the projection should not depend on every caller
+    // having remembered to bound it.
+    fovDeg = Math.max(10, Math.min(170, fovDeg || 110));
+    pitchAlt = Math.max(-89, Math.min(89, pitchAlt || 0));
     // The time controls sit over the bottom of the canvas, so the usable height is
     // less than the canvas height. Fit the sky to that, and lift the centre of view,
     // so the skyline and its compass labels stay clear of the controls.
@@ -191,7 +196,13 @@ const Sky = (() => {
     return pts.sort((a, b) => a.x - b.x);
   }
 
-  function drawGround(ctx, view, pts, sunGlow) {
+  /**
+   * The ground, as a translucent veil rather than an opaque fill. You can look
+   * below the horizon to hunt for a constellation that has already set, so what is
+   * down there has to stay faintly visible — the veil darkens it the way the Earth
+   * would, without hiding it. `opacity` 1 gives a solid horizon again.
+   */
+  function drawGround(ctx, view, pts, sunGlow, opacity = 0.66) {
     if (!pts.length) return;
     const { w, h } = view;
 
@@ -206,23 +217,64 @@ const Sky = (() => {
 
     const top = Math.min(...pts.map((p) => p.y));
     const g = ctx.createLinearGradient(0, top, 0, h);
-    g.addColorStop(0, '#0a0d14');
-    g.addColorStop(0.25, '#05070c');
-    g.addColorStop(1, '#020306');
+    g.addColorStop(0, `rgba(10,13,20,${0.86 * opacity})`);
+    g.addColorStop(0.25, `rgba(5,7,12,${0.97 * opacity})`);
+    g.addColorStop(1, `rgba(2,3,6,${opacity})`);
     ctx.fillStyle = g;
     ctx.fill();
     ctx.restore();
 
-    // A faint rim of light along the skyline, warmed towards the Sun.
+  }
+
+  /**
+   * The horizon, as a thin dotted line with the word on it. Once you can look below
+   * the horizon, the boundary stops being self-evident from the shading alone, so it
+   * gets named rather than merely implied. Drawn whether or not the ground is on.
+   */
+  function drawHorizonLine(ctx, view, pts, scale, sunGlow) {
+    if (!pts.length) return;
+
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
     for (const p of pts) ctx.lineTo(p.x, p.y);
-    ctx.lineWidth = 1.1;
+    ctx.setLineDash([1.5 * scale, 4.5 * scale]);
+    ctx.lineWidth = Math.max(1, 1.1 * scale);
+    ctx.lineCap = 'round';
+    // Warms towards the Sun at dusk, the way a real skyline does.
     ctx.strokeStyle = sunGlow > 0.06
-      ? `rgba(190,150,110,${0.10 + 0.30 * sunGlow})`
-      : 'rgba(120,140,175,0.13)';
+      ? `rgba(214,178,138,${0.34 + 0.34 * sunGlow})`
+      : 'rgba(158,180,214,0.42)';
     ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Label it, on the stretch of horizon nearest the middle of the view.
+    let anchor = pts[0];
+    for (const p of pts) {
+      if (Math.abs(p.x - view.cx) < Math.abs(anchor.x - view.cx)) anchor = p;
+    }
+    const label = 'horizon';
+    ctx.font = `500 ${9.5 * scale}px ui-sans-serif, system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(label).width + 10 * scale;
+    // Offset to one side of centre so it does not collide with the compass marks,
+    // which sit directly on the cardinal points.
+    const lx = Math.min(view.w - tw, Math.max(tw, anchor.x - 132 * scale));
+    let ly = anchor.y;
+    for (const p of pts) if (Math.abs(p.x - lx) < 3) ly = p.y;
+
+    // Break the dotted line so the word sits in a gap rather than on top of it.
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.ellipse(lx, ly, tw / 2, 6 * scale, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+
+    ctx.fillStyle = sunGlow > 0.06
+      ? `rgba(222,192,158,${0.6 + 0.3 * sunGlow})`
+      : 'rgba(168,190,222,0.62)';
+    ctx.fillText(label, lx, ly);
     ctx.restore();
   }
 
@@ -232,7 +284,7 @@ const Sky = (() => {
     ctx.textBaseline = 'top';
     for (const [az, name] of COMPASS) {
       const p = project(0, az, view);
-      if (!p || p.depth < 0.25) continue;
+      if (!p || p.depth < 0.18) continue;
       if (p.x < -30 || p.x > view.w + 30) continue;
       const major = name.length === 1;
       const minor = name.length === 3;
@@ -365,7 +417,6 @@ const Sky = (() => {
 
       for (const [i, j] of con.lines) {
         const A = starAltAz[i], B = starAltAz[j];
-        if (A.alt < -1 && B.alt < -1) continue;
         const pa = project(A.alt, A.az, view);
         const pb = project(B.alt, B.az, view);
         if (!pa || !pb || pa.depth < 0.05 || pb.depth < 0.05) continue;
@@ -404,7 +455,6 @@ const Sky = (() => {
     for (let i = 0; i < data.stars.length; i++) {
       const s = data.stars[i];
       const hz = starAltAz[i];
-      if (hz.alt < 0) continue;
       // Stars in one of the 17 told constellations follow its toggle; every other
       // star in the catalogue is plain sky and is always drawn.
       const owner = data.conByAbbrev[s.c];
@@ -413,7 +463,10 @@ const Sky = (() => {
       // How dark the observer's sky is. Stars do not wink out at a hard limit —
       // the last half magnitude fades towards the threshold of seeing, and
       // everything is harder to catch low down through thicker, murkier air.
-      const extinction = 0.9 * Math.max(0, 1 - hz.alt / 25);
+      // Below the horizon there is no air to look through, so no extinction; the
+      // ground veil drawn over them is what makes them read as "already set".
+      const below = hz.alt < 0;
+      const extinction = below ? 0 : 0.9 * Math.max(0, 1 - hz.alt / 25);
       const effLimit = state.magLimit - extinction;
       if (s.m > effLimit) continue;
       const limitFade = Math.min(1, (effLimit - s.m) / 0.5 + 0.35);
@@ -466,14 +519,17 @@ const Sky = (() => {
 
     /* ---- ground, then names on top ---- */
     const pts = horizonCurve(view);
-    drawGround(ctx, view, pts, sunGlow);
+    if (state.showGround) drawGround(ctx, view, pts, sunGlow, 0.66);
+    drawHorizonLine(ctx, view, pts, scale, sunGlow);
     drawCompass(ctx, view, pts, scale);
 
     if (state.showLabels) {
       for (const entry of hit.constellations) {
         const v = conVisible[entry.abbrev];
-        if (!v || v.visibleStars < 2) continue;
-        const p = project(v.centroidAlt, v.centroidAz, view);
+        if (!v) continue;
+        // Anchor to the whole figure, not just the part that is up, so a
+        // constellation that has set is still labelled when you look down at it.
+        const p = project(v.anchorAlt, v.anchorAz, view);
         if (!p || p.depth < 0.35) continue;
         if (p.x < 40 || p.x > w - 40 || p.y < 18 || p.y > view.usableH - 18) continue;
 

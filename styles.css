@@ -38,13 +38,9 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 
 /* --------------------------------------------------------------- layout --- */
 
-.stage {
-  display: grid;
-  grid-template-columns: 1fr 340px;
-  height: 100%;
-}
+.stage { height: 100%; }
 
-.skybox { position: relative; overflow: hidden; }
+.skybox { position: relative; overflow: hidden; height: 100%; }
 #sky {
   width: 100%; height: 100%; display: block;
   cursor: grab; touch-action: none;
@@ -225,35 +221,50 @@ input.bad { border-color: var(--bad); background: rgba(224, 115, 107, 0.14); }
   outline: 2px solid #7fb0dd; outline-offset: 1px;
 }
 
-/* ------------------------------------------------------------- side rail --- */
+/* ------------------------------------------------- browse / settings panel --- */
 
-.rail {
-  background: var(--rail);
-  border-left: 1px solid var(--line);
-  overflow-y: auto;
-  padding: 20px 18px 26px;
-  display: flex; flex-direction: column; gap: 20px;
+.panel-btn {
+  margin-top: 10px;
+  padding: 6px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(227, 199, 127, 0.34);
+  background: rgba(227, 199, 127, 0.13);
+  color: #e8d093;
+  font: 600 11.5px/1.3 var(--sans);
+  cursor: pointer;
+  backdrop-filter: blur(7px);
+  letter-spacing: 0.02em;
+}
+.panel-btn:hover {
+  background: rgba(227, 199, 127, 0.22);
+  border-color: rgba(227, 199, 127, 0.55);
+  color: #fbeec9;
 }
 
-.rail-head h1 { font-size: 17px; letter-spacing: -0.02em; }
-.rail-head p { margin: 5px 0 0; color: var(--ink-3); font-size: 12px; }
+.panel-head h1 { font-size: 17px; letter-spacing: -0.02em; padding-right: 34px; }
+.panel-head p { margin: 6px 0 0; color: var(--ink-3); font-size: 12px; line-height: 1.55; }
 
-.group > h2, .det summary h2 {
+.panel .group { margin-top: 20px; }
+/* Scoped to .panel so these small caps beat the `.story h2` display size further
+   down the file - the browse panel reuses the story panel's shell, so both rules
+   would otherwise match at the same specificity and the later one would win. */
+.panel .group > h2,
+.panel .det summary h2 {
   font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.11em;
-  color: var(--ink-2); font-weight: 700;
+  color: var(--ink-2); font-weight: 700; margin: 0;
 }
 .ghint { margin: 4px 0 9px; font-size: 11.5px; color: var(--ink-3); line-height: 1.45; }
 
 .det > summary {
   cursor: pointer; list-style: none;
   display: flex; align-items: center; gap: 7px;
-  padding: 8px 0; border-top: 1px solid var(--line);
+  padding: 9px 0; border-top: 1px solid var(--line);
 }
 .det > summary::-webkit-details-marker { display: none; }
 .det > summary::after {
   content: '+'; margin-left: auto; color: var(--ink-3); font-size: 15px; line-height: 1;
 }
-.det[open] > summary::after { content: '–'; }
+.det[open] > summary::after { content: '\2013'; }
 
 /* constellation lists */
 .clist { list-style: none; margin: 0; padding: 0; }
@@ -265,10 +276,10 @@ input.bad { border-color: var(--bad); background: rgba(224, 115, 107, 0.14); }
 }
 .crow:hover { background: rgba(255, 255, 255, 0.055); }
 .crow.sel {
-  background: rgba(120, 165, 215, 0.18);
-  box-shadow: inset 0 0 0 1px rgba(140, 185, 230, 0.32);
+  background: rgba(227, 199, 127, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(227, 199, 127, 0.32);
 }
-.crow.down { opacity: 0.36; }
+.crow.down { opacity: 0.42; }
 .cname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cwhere { font-size: 11px; color: var(--ink-3); text-align: right; }
 .crow.sel .cwhere { color: var(--ink-2); }
@@ -277,7 +288,7 @@ input.bad { border-color: var(--bad); background: rgba(224, 115, 107, 0.14); }
 .cdot.zodiac { background: var(--zodiac); box-shadow: 0 0 7px rgba(227, 199, 127, 0.55); }
 .cdot.circumpolar { background: var(--polar); box-shadow: 0 0 7px rgba(147, 168, 196, 0.5); }
 
-/* small forms inside the rail */
+/* small forms inside the panel */
 .field { display: block; margin-top: 9px; }
 .field > span {
   display: block; font-size: 10px; text-transform: uppercase;
@@ -287,17 +298,17 @@ input.bad { border-color: var(--bad); background: rgba(224, 115, 107, 0.14); }
   display: block; margin-top: 4px;
   font-size: 11px; color: var(--ink-3); font-style: italic;
 }
-.frow { display: flex; gap: 8px; margin-top: 9px; align-items: flex-end; }
-.frow .field { margin-top: 0; flex: 1 1 0; min-width: 0; }
+.frow { display: flex; gap: 8px; margin-top: 9px; align-items: flex-end; flex-wrap: wrap; }
+.frow .field { margin-top: 0; flex: 1 1 90px; min-width: 0; }
 .frow .btn { flex: 0 0 auto; }
 
 .chks { display: flex; flex-direction: column; gap: 5px; margin-top: 11px; }
 .chk { display: flex; align-items: center; gap: 8px; font-size: 12.5px; cursor: pointer; }
 .chk input { accent-color: #7fb0dd; width: 14px; height: 14px; }
 
-.rail-foot { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); }
-.rail-foot p { margin: 0; font-size: 10.5px; line-height: 1.6; color: var(--ink-3); }
-.rail-foot strong { color: var(--ink-2); font-weight: 600; }
+.panel-foot { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line); }
+.panel-foot p { margin: 0; font-size: 10.5px; line-height: 1.6; color: var(--ink-3); }
+.panel-foot strong { color: var(--ink-2); font-weight: 600; }
 
 /* ----------------------------------------------------------- the story --- */
 
@@ -313,6 +324,8 @@ input.bad { border-color: var(--bad); background: rgba(224, 115, 107, 0.14); }
 }
 @keyframes slidein { from { transform: translateX(24px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .story { animation: none; } }
+
+.panel { padding-top: 22px; }
 
 .story .close {
   position: absolute; top: 16px; right: 18px;
@@ -362,10 +375,6 @@ input.bad { border-color: var(--bad); background: rgba(224, 115, 107, 0.14); }
 /* ---------------------------------------------------------- responsive --- */
 
 @media (max-width: 1080px) {
-  body { overflow: auto; }
-  .stage { grid-template-columns: 1fr; height: auto; }
-  .skybox { height: 68vh; min-height: 420px; }
-  .rail { border-left: 0; border-top: 1px solid var(--line); }
   .story { width: min(430px, 100%); }
 }
 

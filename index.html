@@ -47,7 +47,10 @@
         <button class="cbtn" data-az="270">W</button>
         <button class="ctrl" id="turnRight" title="Turn right (→)" aria-label="Turn right">›</button>
       </div>
-      <p class="hint">drag the sky to look around</p>
+      <p class="hint">drag to look around · pinch or scroll to zoom</p>
+      <button id="panelBtn" class="panel-btn" aria-expanded="false" aria-controls="panel">
+        Constellations
+      </button>
     </div>
 
     <!-- time, along the bottom -->
@@ -74,80 +77,85 @@
       </div>
     </div>
 
+    <!-- browse and settings, slides in over the sky -->
+    <aside id="panel" class="story panel" hidden>
+      <button id="closePanel" class="close" aria-label="Close">&times;</button>
+      <header class="panel-head">
+        <h1>Tales from the Stars</h1>
+        <p>Pick one to turn towards it and read its story. Drag the sky to look
+           anywhere — including below the horizon, to find what has already set.</p>
+      </header>
+
+      <section class="group">
+        <h2>The twelve of the zodiac</h2>
+        <p class="ghint">The band the Sun walks through over a year.</p>
+        <ul id="zodiacList" class="clist"></ul>
+      </section>
+
+      <section class="group">
+        <h2>The five that never set</h2>
+        <p class="ghint">Circling the pole, above the horizon every night.</p>
+        <ul id="polarList" class="clist"></ul>
+      </section>
+
+      <details class="group det">
+        <summary><h2>What you can see</h2></summary>
+        <label class="field">
+          <span>Your sky</span>
+          <select id="conditions" class="sel" aria-label="How dark your sky is"></select>
+          <em id="conditionsNote"></em>
+        </label>
+        <div class="chks">
+          <label class="chk"><input type="checkbox" id="tZodiac"><span>Zodiac constellations</span></label>
+          <label class="chk"><input type="checkbox" id="tCircumpolar"><span>The five that never set</span></label>
+          <label class="chk"><input type="checkbox" id="tLines"><span>Join-the-dots lines</span></label>
+          <label class="chk"><input type="checkbox" id="tLabels"><span>Constellation names</span></label>
+          <label class="chk"><input type="checkbox" id="tStarNames"><span>Star names</span></label>
+          <label class="chk"><input type="checkbox" id="tMilkyWay"><span>Milky Way</span></label>
+          <label class="chk"><input type="checkbox" id="tBackdrop"><span>Deep-space backdrop</span></label>
+          <label class="chk"><input type="checkbox" id="tGround"><span>Show the ground</span></label>
+          <label class="chk"><input type="checkbox" id="tTwinkle"><span>Twinkling</span></label>
+        </div>
+      </details>
+
+      <details class="group det">
+        <summary><h2>Where you are</h2></summary>
+        <label class="field"><span>Place</span><input type="text" id="placeInput" placeholder="Bergamo, Italy"></label>
+        <div class="frow">
+          <label class="field"><span>Latitude</span><input type="number" id="latInput" step="0.001" min="-90" max="90"></label>
+          <label class="field"><span>Longitude</span><input type="number" id="lonInput" step="0.001" min="-180" max="180"></label>
+        </div>
+        <label class="field"><span>Clock</span>
+          <select id="tzSelect" class="sel">
+            <option value="Europe/Rome">Italy (Europe/Rome)</option>
+            <option value="Europe/London">UK (Europe/London)</option>
+            <option value="Europe/Copenhagen">Denmark (Europe/Copenhagen)</option>
+            <option value="Europe/Athens">Greece (Europe/Athens)</option>
+            <option value="UTC">UTC</option>
+            <option value="America/New_York">US East</option>
+            <option value="America/Los_Angeles">US West</option>
+            <option value="Asia/Kolkata">India</option>
+            <option value="Asia/Tokyo">Japan</option>
+            <option value="Australia/Sydney">Australia (Sydney)</option>
+          </select>
+        </label>
+        <div class="frow">
+          <button id="applyLocation" class="btn btn-primary">Apply</button>
+          <button id="geoBtn" class="btn">Use my location</button>
+          <button id="resetLocation" class="btn">Bergamo</button>
+        </div>
+      </details>
+
+      <footer class="panel-foot">
+        <p>Star positions from the <strong>HYG&nbsp;v4.1</strong> catalogue. Constellation
+           figures follow <strong>Stellarium</strong>'s IAU line set. Sun and Moon from
+           <strong>astronomy-engine</strong>.</p>
+      </footer>
+    </aside>
+
     <!-- the story, slides in over the sky -->
     <aside id="story" class="story" hidden></aside>
   </div>
-
-  <!-- ----------------------------------------------------------- side rail -->
-  <aside class="rail">
-    <header class="rail-head">
-      <h1>Tales from the Stars</h1>
-      <p>Click a constellation to hear its story, and the sky will turn to face it.</p>
-    </header>
-
-    <section class="group">
-      <h2>The twelve of the zodiac</h2>
-      <p class="ghint">The band the Sun walks through over a year. Each one owns a month.</p>
-      <ul id="zodiacList" class="clist"></ul>
-    </section>
-
-    <section class="group">
-      <h2>The five that never set</h2>
-      <p class="ghint">Circling the pole, these are above the horizon every night of the year.</p>
-      <ul id="polarList" class="clist"></ul>
-    </section>
-
-    <details class="group det">
-      <summary><h2>What you can see</h2></summary>
-      <label class="field">
-        <span>Your sky</span>
-        <select id="conditions" class="sel" aria-label="How dark your sky is"></select>
-        <em id="conditionsNote"></em>
-      </label>
-      <div class="chks">
-        <label class="chk"><input type="checkbox" id="tZodiac"><span>Zodiac constellations</span></label>
-        <label class="chk"><input type="checkbox" id="tCircumpolar"><span>The five that never set</span></label>
-        <label class="chk"><input type="checkbox" id="tLines"><span>Join-the-dots lines</span></label>
-        <label class="chk"><input type="checkbox" id="tLabels"><span>Constellation names</span></label>
-        <label class="chk"><input type="checkbox" id="tStarNames"><span>Star names</span></label>
-        <label class="chk"><input type="checkbox" id="tMilkyWay"><span>Milky Way</span></label>
-        <label class="chk"><input type="checkbox" id="tBackdrop"><span>Deep-space backdrop</span></label>
-        <label class="chk"><input type="checkbox" id="tTwinkle"><span>Twinkling</span></label>
-      </div>
-    </details>
-
-    <details class="group det">
-      <summary><h2>Where you are</h2></summary>
-      <label class="field"><span>Place</span><input type="text" id="placeInput" placeholder="Bergamo, Italy"></label>
-      <div class="frow">
-        <label class="field"><span>Latitude</span><input type="number" id="latInput" step="0.001" min="-90" max="90"></label>
-        <label class="field"><span>Longitude</span><input type="number" id="lonInput" step="0.001" min="-180" max="180"></label>
-      </div>
-      <label class="field"><span>Clock</span>
-        <select id="tzSelect" class="sel">
-          <option value="Europe/Rome">Italy (Europe/Rome)</option>
-          <option value="Europe/London">UK (Europe/London)</option>
-          <option value="Europe/Copenhagen">Denmark (Europe/Copenhagen)</option>
-          <option value="Europe/Athens">Greece (Europe/Athens)</option>
-          <option value="UTC">UTC</option>
-          <option value="America/New_York">US East</option>
-          <option value="America/Los_Angeles">US West</option>
-          <option value="Asia/Kolkata">India</option>
-          <option value="Asia/Tokyo">Japan</option>
-          <option value="Australia/Sydney">Australia (Sydney)</option>
-        </select>
-      </label>
-      <div class="frow">
-        <button id="applyLocation" class="btn btn-primary">Apply</button>
-        <button id="geoBtn" class="btn">Use my location</button>
-        <button id="resetLocation" class="btn">Bergamo</button>
-      </div>
-    </details>
-
-    <footer class="rail-foot">
-      <p>Star positions from the <strong>HYG&nbsp;v4.1</strong> catalogue (Hipparcos, Yale Bright Star, Gliese). Constellation figures follow <strong>Stellarium</strong>'s IAU line set. Sun and Moon from <strong>astronomy-engine</strong>.</p>
-    </footer>
-  </aside>
 
 </div>
 

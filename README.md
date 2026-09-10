@@ -4,9 +4,9 @@ A live, naked-eye view of the night sky, built for an educational project that p
 each constellation with its mythology and history.
 
 You are standing outside, facing a compass direction. The horizon runs along the
-bottom, stars sit above it, and the Milky Way runs where it really runs. Click any
-constellation — in the sky or in the list — and the view turns to face it and tells
-you its story.
+bottom, stars sit above it, and the Milky Way runs where it really runs. Drag to look
+around, pinch to zoom, and keep going past the horizon to find what has already set.
+Click any constellation and the view turns to face it and tells you its story.
 
 Default location is **Bergamo, Italy** (45.695° N, 9.670° E, Europe/Rome), but the
 place can be changed to anywhere on Earth.
@@ -33,16 +33,24 @@ the reported Moon phase is unchanged.
 
 ## What you can do
 
+The sky fills the window; everything else is an overlay that gets out of the way.
+
 | | |
 |---|---|
 | **Look around** | Drag the sky, use `←` `→` `↑` `↓`, or the N/E/S/W buttons |
-| **Zoom** | Scroll wheel (45°–150° field of view) |
+| **Zoom** | Pinch, scroll, or `+` / `-` — 25° to 160° field of view |
+| **Look below the horizon** | Keep dragging down. Constellations that have already set stay drawn, dimmed under the ground, so you can go and find them |
 | **Scrub time** | *Time of night* and *time of year* sliders |
 | **Watch it move** | `Play` — up to a week a second, to see the seasonal handoff |
 | **Back to now** | `Now`, or press `N` |
-| **Read a story** | Click a constellation, star, or list row; `Esc` closes |
+| **Read a story** | Click a constellation or its name; double-click zooms in on it. `Esc` closes |
+| **Browse them all** | The *Constellations* button, top right |
 | **Your sky** | City centre → dark countryside, which changes how many stars show |
 | **Move location** | Anywhere on Earth, under *Where you are* |
+
+Because you can look anywhere on the sphere, the ground is drawn as a translucent
+veil rather than an opaque floor — it darkens what is beneath you the way the Earth
+would, without hiding it. Turn it off entirely under *What you can see*.
 
 The view can also be set from the URL, which is how it is tested:
 
@@ -193,7 +201,8 @@ tools/make_nebula.html   draws the backdrop plate
 
 ## Accessibility
 
-Every constellation is reachable by keyboard, and each list row carries a text
-description of where it currently is, so the sky has a spoken equivalent rather than
-being canvas-only. `prefers-reduced-motion` turns off twinkling and the animated
-turn-to-face.
+Every constellation is reachable by keyboard from the *Constellations* panel, and
+each row carries a text description of where it currently is — "high in the
+south-east", "below you" — so the sky has a spoken equivalent rather than being
+canvas-only. `prefers-reduced-motion` turns off twinkling, the backdrop drift, and
+the animated turn-to-face.
