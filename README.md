@@ -188,36 +188,43 @@ to the constellations the file does not cover, and guarantees the intent — bri
 star always gets the big glyph. Where the two star selections coincide the ids agree;
 where this project's IAU figures carry more vertices the ranks legitimately differ.
 
-**The file carries no artwork**, only ids and radii, so the seven shapes are drawn in
-`js/sky.js` (`drawGlyph`), each in a unit space where `1.0` is the file's 100 units —
-so `g4` really does reach out to 1.8 and the spec's collision radii still hold.
-Dropping in real artwork means replacing those seven cases and nothing else.
+**The spec file carries no artwork**, only ids and radii; the artwork arrived
+separately and lives in `assets/glyphs/` — see below.
 
 Glyphs hold a constant size on screen rather than a constant angular size: they are
 accents on a chart, not objects in the sky, and sizing them in degrees made them
 swell into stickers the moment you zoomed in. Turn them off under *What you can see*.
 
-### Dropping in real artwork
+### The artwork
 
-`drawGlyph()` in `js/sky.js` has one `case` per glyph id, and that is the only place
-that needs to change. To supply artwork instead, put one file per id in
-`assets/glyphs/` named `g1` … `g7`. SVG is preferable — crisp at any zoom, tintable,
-about a kilobyte each — but PNG at 512×512 works.
+`assets/glyphs/` holds the real glyphs, supplied as part of the design:
 
-Either way:
+- `svg/g1.svg` … `g7.svg` — the source of truth. Square `viewBox="-200 -200 400 400"`,
+  artwork centred on (0,0), paths only, single colour via `currentColor`.
+- `png/g1.png` … — 512×512, transparent, white artwork, same centring.
+- `README.md` — the design's own notes on each glyph.
 
-- **Square canvas, artwork centred.** The centre of the image *is* the star's
-  position, so anything drawn off-centre will sit off its star.
-- **Transparent background.**
-- **One colour** (white or black), no baked-in hue — the renderer tints each glyph
-  gold for the zodiac and grey-blue for the circumpolar five.
-- **Consistent padding across all seven**, so `glyphOuterRadius` still describes the
-  art. `g4` is specified at 180 against everyone else's 100, so draw it 1.8× larger
-  *within the same canvas size* rather than letting each glyph fill its own canvas
-  edge to edge — otherwise they all come out the same size on screen.
+The **PNGs are what actually get drawn**, for two reasons. An SVG loaded through an
+`<img>` is a separate document and cannot inherit `currentColor` from the page, so it
+could not be tinted; and `<img>` needs no `fetch`, so the artwork also works when
+`index.html` is opened straight from disk, where fetching local files is blocked.
 
-For SVG, a square `viewBox` with paths only (no embedded raster, no `<image>`), and
-either plain white fills or `fill="currentColor"`.
+Tinting keeps the artwork's alpha and replaces its colour with a `source-in`
+composite into an offscreen canvas, cached per id and colour — so it happens seven
+times per palette rather than once per star per frame. The whole glyph layer costs
+about a millisecond a frame for fifty-odd glyphs.
+
+Sizing falls out of the shared canvas rather than needing per-glyph cases. All seven
+are drawn on the same 400-unit canvas, and a glyph's outer radius is its
+`glyphOuterRadius` in those units — so if 100 units is `r` pixels, the canvas is
+always `4r` pixels square, whichever glyph it is. That is exactly how `g4` comes out
+1.8× the others for free.
+
+If a glyph file is missing or fails to load, `drawGlyph()` falls back to shapes drawn
+in code, so the chart still works. To replace the artwork, drop in new files with the
+same names, keeping the centring and keeping the padding consistent across all seven
+(don't normalise each glyph to fill its own canvas, or they will all come out the
+same size on screen).
 
 ## The backdrop
 
@@ -294,6 +301,7 @@ data/constellations.json line figures plus the mythology content
 data/catalog.js          generated: both payloads as globals, so file:// works
 assets/backdrop.mp4      the backdrop loop
 assets/nebula.jpg        generated poster / fallback plate
+assets/glyphs/           star glyph artwork: svg source, png for rendering
 tools/build_data.py      the build script
 tools/mythology.json     the story content, edit this
 tools/star-glyphs.json   the glyph spec: ids, radii, size curve

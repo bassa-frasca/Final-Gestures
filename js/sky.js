@@ -397,8 +397,67 @@ const Sky = (() => {
   // anchored to an angular size: they are decorative accents on the chart, not
   // objects in the sky, so they hold a constant size on screen. Sizing them in
   // degrees instead made them swell into stickers as soon as you zoomed in.
-  const GLYPH_BASE_PX = 33;
-  const GLYPH_PX_MIN = 2.2, GLYPH_PX_MAX = 17;
+  const GLYPH_BASE_PX = 38;
+  const GLYPH_PX_MIN = 2.4, GLYPH_PX_MAX = 21;
+
+  /* --- the supplied artwork ------------------------------------------------ *
+   * assets/glyphs/ holds the real glyphs: SVG as the source of truth and a 512px
+   * white PNG of each for rendering. The PNGs are what get drawn, for two
+   * reasons: an SVG loaded through an <img> cannot inherit `currentColor` from the
+   * page, so it could not be tinted; and <img> needs no fetch, so the artwork also
+   * works when index.html is opened straight from disk, where fetching local files
+   * is blocked.
+   *
+   * Tinting keeps the artwork's alpha and replaces its colour, via a 'source-in'
+   * composite into an offscreen canvas — cached per id and colour, so it happens
+   * seven times per palette rather than once per star per frame.
+   */
+  const GLYPH_IDS = ['g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7'];
+  const GLYPH_RASTER_PX = 256;   // ample: a glyph never draws wider than ~90px
+
+  const glyphArt = { started: false, ready: false, loaded: 0, failed: 0,
+                     raw: {}, tinted: new Map(), onReady: null };
+
+  /** Kick off loading. `onReady` fires once, so the sky can redraw with the art. */
+  function preloadGlyphs(onReady) {
+    if (glyphArt.started) return;
+    glyphArt.started = true;
+    glyphArt.onReady = onReady;
+    for (const id of GLYPH_IDS) {
+      const img = new Image();
+      img.onload = () => {
+        glyphArt.raw[id] = img;
+        settleGlyphLoad();
+      };
+      // A missing or broken file is not fatal: drawGlyph falls back to the shapes
+      // drawn in code, so the chart still works.
+      img.onerror = () => { glyphArt.failed++; settleGlyphLoad(); };
+      img.src = `assets/glyphs/png/${id}.png`;
+    }
+  }
+
+  function settleGlyphLoad() {
+    if (++glyphArt.loaded < GLYPH_IDS.length) return;
+    glyphArt.ready = glyphArt.failed === 0;
+    if (glyphArt.ready && glyphArt.onReady) glyphArt.onReady();
+  }
+
+  function tintedGlyph(id, colour) {
+    const key = `${id}|${colour}`;
+    const hit = glyphArt.tinted.get(key);
+    if (hit) return hit;
+    const img = glyphArt.raw[id];
+    if (!img) return null;
+    const c = document.createElement('canvas');
+    c.width = c.height = GLYPH_RASTER_PX;
+    const x = c.getContext('2d');
+    x.drawImage(img, 0, 0, GLYPH_RASTER_PX, GLYPH_RASTER_PX);
+    x.globalCompositeOperation = 'source-in';
+    x.fillStyle = colour;
+    x.fillRect(0, 0, GLYPH_RASTER_PX, GLYPH_RASTER_PX);
+    glyphArt.tinted.set(key, c);
+    return c;
+  }
 
   const glyphScaleFromMag = (mag) =>
     Math.max(0.16, Math.min(0.42, 0.42 - (mag - 0.85) * 0.055));
@@ -423,6 +482,21 @@ const Sky = (() => {
    * @param {number[]} tint constellation group colour
    */
   function drawGlyph(ctx, id, x, y, r, tint, alpha) {
+    // Real artwork if it loaded, otherwise the shapes drawn below.
+    const art = glyphArt.ready ? tintedGlyph(id, rgb(tint, 1)) : null;
+    if (art) {
+      // Every glyph shares a 400-unit canvas, and a glyph's outer radius is its
+      // glyphOuterRadius in those units. So if 100 units is r pixels, the canvas is
+      // 4r pixels square — the same for all seven, which is exactly how g4 comes
+      // out 1.8x the others without any special casing.
+      const size = 4 * r;
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, alpha);
+      ctx.drawImage(art, x - size / 2, y - size / 2, size, size);
+      ctx.restore();
+      return;
+    }
+
     ctx.save();
     const line = rgb(tint, alpha);
     const core = `rgba(255,253,246,${Math.min(1, alpha * 1.15)})`;
@@ -845,5 +919,5 @@ const Sky = (() => {
   }
 
   return { render, pick, project, makeView, starRadius, galacticToEquatorial,
-           drawGlyph, glyphScaleFromMag, COMPASS };
+           drawGlyph, glyphScaleFromMag, preloadGlyphs, glyphArt, COMPASS };
 })();

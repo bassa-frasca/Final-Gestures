@@ -805,6 +805,8 @@
     fillLocationInputs();
     syncTimeInputs();
     wire();
+    // Redraw once the glyph artwork lands; until then the code-drawn shapes stand in.
+    Sky.preloadGlyphs(() => draw());
     draw();
     requestAnimationFrame(loop);
 
