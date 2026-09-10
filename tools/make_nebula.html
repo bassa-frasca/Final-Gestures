@@ -1,0 +1,127 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>nebula plate generator</title>
+<!--
+  Generates the deep-space backdrop plate used behind the live sky.
+  It is rendered rather than downloaded so the repo carries no third-party artwork.
+
+  Nebulosity only - no stars. The live sky draws the real catalogue on top.
+
+  Screenshot it at 2560x1440 to produce assets/nebula.png:
+    chrome --headless --window-size=2560,1440 --screenshot=assets/nebula.png \
+           --virtual-time-budget=4000 tools/make_nebula.html
+
+  Deterministic: the seeded PRNG means the same plate comes out every time.
+-->
+<style>
+  html, body { margin: 0; background: #04060e; overflow: hidden; }
+  canvas { display: block; }
+</style>
+<canvas id="c" width="2560" height="1440"></canvas>
+<script>
+const W = 2560, H = 1440;
+const ctx = document.getElementById('c').getContext('2d');
+
+// Small deterministic PRNG (mulberry32) so the plate is reproducible.
+let seed = 0x9e3779b9;
+function rnd() {
+  seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+  let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+  return ((t ^ t >>> 14) >>> 0) / 4294967296;
+}
+const rr = (a, b) => a + (b - a) * rnd();
+
+/* ---- base: deep navy, a touch lighter towards the middle ---- */
+const base = ctx.createLinearGradient(0, 0, W * 0.35, H);
+base.addColorStop(0, '#05070f');
+base.addColorStop(0.5, '#0a1226');
+base.addColorStop(1, '#050810');
+ctx.fillStyle = base;
+ctx.fillRect(0, 0, W, H);
+
+// Distance from a line through the frame, used to keep the clouds in a band.
+const bandAt = (x) => H * 0.52 + (x - W / 2) * 0.09;
+
+// Cool blues and teals on the left, warmer magenta and rose on the right.
+const COOL = [[42, 78, 150], [38, 110, 150], [58, 92, 175], [30, 70, 120]];
+const WARM = [[168, 62, 122], [206, 98, 140], [180, 80, 110], [150, 70, 150]];
+const GOLD = [[196, 158, 106], [180, 130, 90]];
+
+/**
+ * One puff of gas: a radial gradient squashed and rotated so it is not a circle.
+ * Nebulae look the way they do because the same structure repeats at several
+ * scales at once, so this gets called in octaves - a few huge soft washes for the
+ * overall shape, then progressively smaller and more numerous puffs for detail.
+ */
+function puff(x, y, r, a, aspect, angle, c, dark) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.scale(aspect, 1 / Math.sqrt(aspect));
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+  const col = dark ? '4,6,14' : `${c[0]},${c[1]},${c[2]}`;
+  g.addColorStop(0, `rgba(${col},${a})`);
+  g.addColorStop(0.45, `rgba(${col},${a * 0.42})`);
+  g.addColorStop(1, `rgba(${col},0)`);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function scatter(count, rMin, rMax, aMin, aMax, spreadScale, dark) {
+  for (let i = 0; i < count; i++) {
+    const x = rr(-250, W + 250);
+    const spread = H * spreadScale * (0.28 + 0.72 * Math.pow(rnd(), 1.7));
+    const y = bandAt(x) + (rnd() < 0.5 ? -1 : 1) * spread * Math.pow(rnd(), 0.75);
+
+    const warmth = Math.min(1, Math.max(0, (x / W - 0.32) * 1.7));
+    let pal = rnd() < warmth ? WARM : COOL;
+    if (rnd() < 0.05) pal = GOLD;
+
+    // Brighter near the core, fainter towards the edges of the frame.
+    const coreDist = Math.hypot(x - W * 0.66, y - H * 0.42) / (W * 0.5);
+    const falloff = Math.max(0.22, 1.45 - coreDist);
+    puff(x, y, rr(rMin, rMax), rr(aMin, aMax) * falloff,
+         rr(1.15, 2.6), rnd() * Math.PI, pal[(rnd() * pal.length) | 0], dark);
+  }
+}
+
+/* ---- three octaves of gas, brightest first ---- */
+ctx.globalCompositeOperation = 'lighter';
+scatter(70,   420, 900, 0.030, 0.072, 1.00, false);   // overall shape
+scatter(360,  150, 400, 0.022, 0.052, 0.85, false);   // mid structure
+scatter(1300,  38, 140, 0.016, 0.042, 0.70, false);   // fine filaments
+
+/* ---- the bright core ---- */
+const cx = W * 0.665, cy = H * 0.42;
+for (const [r, a, col] of [[540, 0.13, '255,225,235'], [250, 0.18, '255,240,250'], [95, 0.42, '255,255,255']]) {
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  g.addColorStop(0, `rgba(${col},${a})`);
+  g.addColorStop(1, `rgba(${col},0)`);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/* ---- dust lanes, also at two scales, carving dark rifts back out ---- */
+ctx.globalCompositeOperation = 'source-over';
+scatter(60,  200, 520, 0.018, 0.055, 0.80, true);
+scatter(170,  50, 190, 0.012, 0.040, 0.62, true);
+
+/* ---- no stars on the plate ----
+   The app draws the real HYG catalogue over this, so any stars painted here would
+   double up with genuine ones and read as noise. The plate is nebulosity only. */
+
+/* ---- vignette, so the plate sits back behind the interface ---- */
+ctx.globalCompositeOperation = 'source-over';
+const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.28, W / 2, H / 2, H * 0.95);
+vg.addColorStop(0, 'rgba(4,6,14,0)');
+vg.addColorStop(1, 'rgba(3,5,11,0.72)');
+ctx.fillStyle = vg;
+ctx.fillRect(0, 0, W, H);
+document.title = 'nebula ready';
+</script>

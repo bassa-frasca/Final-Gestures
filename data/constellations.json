@@ -1,0 +1,1141 @@
+{
+ "meta": {
+  "star_source": "HYG Database v4.1 (hygdata_v41.csv), astronexus/HYG-Database, public domain",
+  "line_source": "Stellarium modern_iau sky culture (index.json), IAU-recognised figures",
+  "epoch": "J2000",
+  "all_sky_mag_limit": 5.2
+ },
+ "constellations": [
+  {
+   "abbrev": "Ari",
+   "name": "Aries",
+   "group": "zodiac",
+   "lines": [
+    [
+     137,
+     35
+    ],
+    [
+     35,
+     15
+    ],
+    [
+     15,
+     106
+    ]
+   ],
+   "myth_fact": "Aries is Chrysomallos, the flying ram with a fleece of gold sent to rescue the children Phrixus and Helle from sacrifice. Helle lost her grip and fell into the strait still called the Hellespont after her.",
+   "ancient_use": "For the Greeks this was the zodiac's starting gate: around 2,000 years ago the Sun stood in Aries at the spring equinox. Astronomers still call the zero point of the celestial coordinate system the 'First Point of Aries', even though precession has since dragged it into Pisces.",
+   "story": "Phrixus reached Colchis alive, sacrificed the ram in thanks, and hung its golden fleece in a sacred grove guarded by a sleepless dragon. A generation later Jason and the Argonauts sailed to steal it back — so this dim triangle of stars is the seed of one of the longest adventure stories in Greek myth. Its faintness is a good reminder that a constellation's fame has little to do with its brightness.",
+   "brightest": "Hamal (α Arietis)"
+  },
+  {
+   "abbrev": "Tau",
+   "name": "Taurus",
+   "group": "zodiac",
+   "lines": [
+    [
+     53,
+     0
+    ],
+    [
+     0,
+     86
+    ],
+    [
+     86,
+     110
+    ],
+    [
+     110,
+     124
+    ],
+    [
+     124,
+     96
+    ],
+    [
+     96,
+     7
+    ],
+    [
+     119,
+     140
+    ],
+    [
+     107,
+     177
+    ],
+    [
+     110,
+     87
+    ],
+    [
+     87,
+     119
+    ]
+   ],
+   "myth_fact": "Zeus took the form of a magnificent white bull to carry off the Phoenician princess Europa, swimming her across the sea to Crete. Only the bull's head and shoulders are drawn in the sky — the rest is submerged.",
+   "ancient_use": "Around 4000 BCE the Sun rose in Taurus at the spring equinox, and bull worship ran through Mesopotamian, Minoan and Egyptian religion in the same era. Farmers across the Mediterranean and the Pacific timed their planting by the first dawn appearance of the Pleiades, the little cluster on the bull's shoulder.",
+   "story": "Aldebaran, the bull's furious red eye, takes its name from the Arabic al-dabarān, 'the follower', because it trails the Pleiades across the sky all night. The V of the bull's face is the Hyades, the nearest open star cluster to us, and in myth the weeping half-sisters of the Pleiades. A bull with a cluster of dots above it appears on the walls of Lascaux, painted some 17,000 years ago — which some researchers read as the oldest star chart we have.",
+   "brightest": "Aldebaran (α Tauri)"
+  },
+  {
+   "abbrev": "Gem",
+   "name": "Gemini",
+   "group": "zodiac",
+   "lines": [
+    [
+     81,
+     101
+    ],
+    [
+     101,
+     93
+    ],
+    [
+     93,
+     147
+    ],
+    [
+     147,
+     13
+    ],
+    [
+     13,
+     147
+    ],
+    [
+     147,
+     93
+    ],
+    [
+     93,
+     155
+    ],
+    [
+     155,
+     99
+    ],
+    [
+     99,
+     155
+    ],
+    [
+     155,
+     3
+    ],
+    [
+     3,
+     155
+    ],
+    [
+     155,
+     126
+    ],
+    [
+     126,
+     184
+    ],
+    [
+     184,
+     5
+    ],
+    [
+     5,
+     184
+    ],
+    [
+     184,
+     104
+    ],
+    [
+     104,
+     184
+    ],
+    [
+     184,
+     61
+    ],
+    [
+     61,
+     161
+    ],
+    [
+     161,
+     61
+    ],
+    [
+     61,
+     47
+    ],
+    [
+     47,
+     75
+    ],
+    [
+     75,
+     164
+    ]
+   ],
+   "myth_fact": "The twins Castor and Pollux had the same mother but different fathers — Pollux was the son of Zeus and immortal, Castor the son of a mortal king. When Castor was killed, Pollux begged to die too.",
+   "ancient_use": "The Dioscuri were the patron gods of sailors. The electrical glow now called St Elmo's fire, seen at a ship's masthead before a storm clears, was taken as the twins arriving to save the crew — which is why Roman ships so often carried their names.",
+   "story": "Zeus answered Pollux's plea with a compromise: the brothers would share a single immortality, spending alternate days among the gods on Olympus and among the dead in Hades. Set in the sky together, they became the emblem of loyalty that outlasts death. Oddly, the star labelled beta — Pollux — is the brighter of the two; Castor, labelled alpha, is fainter, and is really a remarkable system of six stars orbiting one another.",
+   "brightest": "Pollux (β Geminorum)"
+  },
+  {
+   "abbrev": "Cnc",
+   "name": "Cancer",
+   "group": "zodiac",
+   "lines": [
+    [
+     174,
+     143
+    ],
+    [
+     143,
+     97
+    ],
+    [
+     97,
+     143
+    ],
+    [
+     143,
+     192
+    ],
+    [
+     192,
+     149
+    ]
+   ],
+   "myth_fact": "Hera sent the giant crab Karkinos to harass Heracles while he fought the many-headed Hydra. It pinched his foot; he crushed it, and Hera set it in the sky as thanks for its brief service.",
+   "ancient_use": "The Tropic of Cancer is named for this constellation, because the Sun once stood here at the June solstice — the northernmost point of its yearly path. Precession has since moved that point into Taurus, but the line on every world map still carries the crab's name.",
+   "story": "Cancer is the faintest constellation of the zodiac, with no star brighter than fourth magnitude, but its heart is the Beehive Cluster (M44) — a swarm of roughly a thousand stars visible as a hazy patch. Ancient writers including Aratus and Pliny used it as a weather gauge: if the night was clear and the Beehive still could not be seen, thickening air meant a storm was on the way.",
+   "brightest": "Tarf (β Cancri)"
+  },
+  {
+   "abbrev": "Leo",
+   "name": "Leo",
+   "group": "zodiac",
+   "lines": [
+    [
+     4,
+     91
+    ],
+    [
+     91,
+     16
+    ],
+    [
+     16,
+     89
+    ],
+    [
+     89,
+     138
+    ],
+    [
+     138,
+     54
+    ],
+    [
+     16,
+     31
+    ],
+    [
+     31,
+     19
+    ],
+    [
+     19,
+     79
+    ],
+    [
+     79,
+     31
+    ],
+    [
+     31,
+     79
+    ],
+    [
+     79,
+     91
+    ],
+    [
+     138,
+     188
+    ],
+    [
+     188,
+     180
+    ],
+    [
+     180,
+     54
+    ],
+    [
+     54,
+     91
+    ],
+    [
+     79,
+     145
+    ],
+    [
+     145,
+     153
+    ]
+   ],
+   "myth_fact": "This is the Nemean Lion, whose hide no weapon could pierce. For the first of his twelve labours Heracles had to throttle it with his bare hands, then wore its skin as armour ever after.",
+   "ancient_use": "In ancient Egypt the Sun's arrival in Leo coincided with the annual flooding of the Nile, the event the whole agricultural year depended on. Temple waterspouts were carved as lion heads with water pouring from their mouths — a habit that survives in fountains and gutter spouts today.",
+   "story": "Leo is one of the rare constellations that genuinely looks like the thing it is named after: a crouching cat with a sickle-shaped head. Its brightest star Regulus means 'little king' — a name Copernicus gave it, translating older Arabic and Babylonian titles that also called it the royal star. Regulus sits almost exactly on the ecliptic, so the Moon and planets pass close by it, and it spins so fast it is squashed into a visible oval.",
+   "brightest": "Regulus (α Leonis)"
+  },
+  {
+   "abbrev": "Vir",
+   "name": "Virgo",
+   "group": "zodiac",
+   "lines": [
+    [
+     139,
+     159
+    ],
+    [
+     159,
+     151
+    ],
+    [
+     151,
+     103
+    ],
+    [
+     103,
+     139
+    ],
+    [
+     139,
+     40
+    ],
+    [
+     40,
+     84
+    ],
+    [
+     84,
+     45
+    ],
+    [
+     45,
+     84
+    ],
+    [
+     84,
+     40
+    ],
+    [
+     40,
+     183
+    ],
+    [
+     183,
+     1
+    ],
+    [
+     1,
+     183
+    ],
+    [
+     183,
+     40
+    ],
+    [
+     40,
+     83
+    ],
+    [
+     83,
+     171
+    ],
+    [
+     171,
+     120
+    ],
+    [
+     120,
+     171
+    ],
+    [
+     171,
+     83
+    ],
+    [
+     83,
+     156
+    ],
+    [
+     156,
+     135
+    ]
+   ],
+   "myth_fact": "Virgo has been read as Demeter the harvest goddess, as her daughter Persephone, and as Astraea, goddess of justice, who fled the earth in disgust at human wickedness and took her scales — neighbouring Libra — with her.",
+   "ancient_use": "Spica means 'ear of wheat' in Latin, and the maiden is usually drawn holding one. Her first dawn appearance signalled harvest time across the Mediterranean, and temples in Egypt and Greece were aligned to Spica's rising.",
+   "story": "Virgo holds a special place in the history of science. Around 129 BCE Hipparchus compared Spica's position against records made by Timocharis 150 years earlier, found it had shifted, and from that single discrepancy deduced the precession of the equinoxes — the 26,000-year wobble of the Earth's axis. One careful measurement of one star in this constellation revealed that the entire sky slowly turns.",
+   "brightest": "Spica (α Virginis)"
+  },
+  {
+   "abbrev": "Lib",
+   "name": "Libra",
+   "group": "zodiac",
+   "lines": [
+    [
+     41,
+     34
+    ],
+    [
+     41,
+     72
+    ],
+    [
+     34,
+     141
+    ],
+    [
+     141,
+     41
+    ],
+    [
+     41,
+     141
+    ],
+    [
+     141,
+     105
+    ],
+    [
+     105,
+     113
+    ]
+   ],
+   "myth_fact": "Libra is the newest of the zodiac figures. For the Greeks these stars were the Chelae, the Claws of the Scorpion next door; the Romans broke them off and made them the scales of justice held by neighbouring Virgo.",
+   "ancient_use": "When the constellation was named, the Sun crossed it at the autumn equinox — the day when daylight and darkness balance exactly. A set of scales was the obvious emblem, and Libra was long associated with law courts, weighing and fair measure.",
+   "story": "The old identity is hiding in plain sight: the two brightest stars are Zubenelgenubi and Zubeneschamali, from the Arabic for 'the southern claw' and 'the northern claw'. Every time you name them you are still calling Libra part of the scorpion. Zubeneschamali is one of very few stars that observers have persistently described as greenish, though instruments record it as plain blue-white.",
+   "brightest": "Zubeneschamali (β Librae)"
+  },
+  {
+   "abbrev": "Sco",
+   "name": "Scorpius",
+   "group": "zodiac",
+   "lines": [
+    [
+     32,
+     25
+    ],
+    [
+     25,
+     49
+    ],
+    [
+     49,
+     25
+    ],
+    [
+     25,
+     50
+    ],
+    [
+     50,
+     2
+    ],
+    [
+     2,
+     43
+    ],
+    [
+     43,
+     26
+    ],
+    [
+     26,
+     59
+    ],
+    [
+     59,
+     109
+    ],
+    [
+     109,
+     77
+    ],
+    [
+     77,
+     12
+    ],
+    [
+     12,
+     56
+    ],
+    [
+     56,
+     28
+    ],
+    [
+     28,
+     37
+    ],
+    [
+     37,
+     6
+    ],
+    [
+     6,
+     69
+    ],
+    [
+     32,
+     146
+    ],
+    [
+     49,
+     136
+    ]
+   ],
+   "myth_fact": "The scorpion was sent to kill the boastful hunter Orion, who claimed he could slay every animal on earth. It stung his heel and won.",
+   "ancient_use": "Scorpius is one of the oldest recognised constellations, catalogued by the Babylonians as GIR-TAB, 'the scorpion', more than three thousand years ago. Orion and Scorpius were deliberately placed at opposite ends of the sky so the hunter always sets as his killer rises — the two are never visible together.",
+   "story": "Its heart is Antares, a name meaning 'rival of Mars' for its blazing red colour. It is a red supergiant so vast that if it replaced the Sun it would swallow the orbit of Mars. From Bergamo's latitude Scorpius never climbs far above the southern horizon and its sting stays low, which is why it reads as a summer constellation that seems to crawl along the treeline before sinking away in autumn.",
+   "brightest": "Antares (α Scorpii)"
+  },
+  {
+   "abbrev": "Sgr",
+   "name": "Sagittarius",
+   "group": "zodiac",
+   "lines": [
+    [
+     9,
+     55
+    ],
+    [
+     55,
+     38
+    ],
+    [
+     38,
+     9
+    ],
+    [
+     9,
+     38
+    ],
+    [
+     38,
+     44
+    ],
+    [
+     44,
+     68
+    ],
+    [
+     68,
+     38
+    ],
+    [
+     38,
+     68
+    ],
+    [
+     68,
+     17
+    ],
+    [
+     17,
+     78
+    ],
+    [
+     78,
+     33
+    ],
+    [
+     33,
+     68
+    ],
+    [
+     68,
+     33
+    ],
+    [
+     33,
+     9
+    ],
+    [
+     9,
+     64
+    ],
+    [
+     44,
+     131
+    ],
+    [
+     142,
+     48
+    ],
+    [
+     48,
+     123
+    ],
+    [
+     123,
+     95
+    ],
+    [
+     95,
+     48
+    ]
+   ],
+   "myth_fact": "The archer is a centaur drawing his bow, identified variously as the wise healer Chiron or as Crotus, the satyr who invented archery and applause. His arrow is aimed squarely at the red heart of the scorpion beside him.",
+   "ancient_use": "The Babylonians knew these stars as Pabilsag, an archer god with a scorpion's tail. Because the constellation sits low and bright in the southern summer sky, its rising and setting were widely used to mark the height of summer.",
+   "story": "Modern stargazers rarely see a centaur here — the bright core forms an unmistakable Teapot, complete with handle and spout. Far more importantly, when you look at Sagittarius you are looking straight at the centre of our own galaxy, some 26,000 light years away, where a supermassive black hole sits behind thick clouds of dust. The Milky Way is at its densest and brightest in this direction.",
+   "brightest": "Kaus Australis (ε Sagittarii)"
+  },
+  {
+   "abbrev": "Cap",
+   "name": "Capricornus",
+   "group": "zodiac",
+   "lines": [
+    [
+     102,
+     60
+    ],
+    [
+     60,
+     162
+    ],
+    [
+     162,
+     160
+    ],
+    [
+     160,
+     125
+    ],
+    [
+     125,
+     191
+    ],
+    [
+     191,
+     46
+    ],
+    [
+     46,
+     117
+    ],
+    [
+     117,
+     158
+    ],
+    [
+     158,
+     102
+    ]
+   ],
+   "myth_fact": "Capricornus is a goat with a fish's tail. In one telling it is the god Pan, who leapt into the Nile to escape the monster Typhon and transformed the submerged half of himself into a fish; in another it is Amalthea, the goat who nursed the infant Zeus.",
+   "ancient_use": "The figure is far older than Greece: Mesopotamian texts describe suhurmāšu, the goat-fish, sacred to Enki, god of fresh water and wisdom. The Tropic of Capricorn is named here because the Sun once reached its southernmost point in this constellation at the December solstice.",
+   "story": "Capricornus is faint and easily overlooked, a shallow triangle between the bright summer stars and the autumn ones. It has a quiet claim to fame: in 1846 Neptune was discovered just inside its borders, found not by sweeping the sky but by mathematics — Le Verrier predicted where an unseen planet must be from irregularities in Uranus's orbit, and astronomers pointed their telescope at Capricornus and found it within a degree.",
+   "brightest": "Deneb Algedi (δ Capricorni)"
+  },
+  {
+   "abbrev": "Aqr",
+   "name": "Aquarius",
+   "group": "zodiac",
+   "lines": [
+    [
+     128,
+     51
+    ],
+    [
+     51,
+     52
+    ],
+    [
+     52,
+     134
+    ],
+    [
+     134,
+     112
+    ],
+    [
+     112,
+     152
+    ],
+    [
+     152,
+     112
+    ],
+    [
+     112,
+     195
+    ],
+    [
+     195,
+     52
+    ],
+    [
+     179,
+     51
+    ],
+    [
+     51,
+     52
+    ],
+    [
+     52,
+     165
+    ],
+    [
+     165,
+     122
+    ],
+    [
+     122,
+     170
+    ],
+    [
+     170,
+     185
+    ],
+    [
+     185,
+     144
+    ],
+    [
+     144,
+     185
+    ],
+    [
+     185,
+     115
+    ],
+    [
+     115,
+     185
+    ],
+    [
+     185,
+     73
+    ],
+    [
+     73,
+     154
+    ],
+    [
+     154,
+     122
+    ]
+   ],
+   "myth_fact": "Aquarius is Ganymede, a mortal prince so beautiful that Zeus carried him to Olympus to serve as cupbearer to the gods, pouring out their wine forever.",
+   "ancient_use": "In Babylonian records these stars were GU.LA, 'the great one', drawn as a figure with an overflowing urn. The Sun's passage through Aquarius fell in the rainy part of the year, and in Egypt the water bearer was linked to the Nile flood — the constellation was a seasonal signal for water.",
+   "story": "The stream of water pouring from the jar runs down towards the mouth of Piscis Austrinus, the southern fish, and its brightest star Fomalhaut. Aquarius is large but dim, with no truly bright stars, yet it is packed with things worth finding: the Helix Nebula, one of the closest dying stars shedding its outer layers, and the Saturn Nebula. Look here in autumn evenings, once the summer triangle has slid west.",
+   "brightest": "Sadalsuud (β Aquarii)"
+  },
+  {
+   "abbrev": "Psc",
+   "name": "Pisces",
+   "group": "zodiac",
+   "lines": [
+    [
+     193,
+     194
+    ],
+    [
+     194,
+     190
+    ],
+    [
+     190,
+     193
+    ],
+    [
+     193,
+     108
+    ],
+    [
+     108,
+     173
+    ],
+    [
+     173,
+     129
+    ],
+    [
+     129,
+     187
+    ],
+    [
+     187,
+     175
+    ],
+    [
+     175,
+     186
+    ],
+    [
+     186,
+     150
+    ],
+    [
+     150,
+     163
+    ],
+    [
+     163,
+     176
+    ],
+    [
+     176,
+     118
+    ],
+    [
+     118,
+     198
+    ],
+    [
+     198,
+     189
+    ],
+    [
+     189,
+     163
+    ]
+   ],
+   "myth_fact": "Two fish joined by a long cord. Aphrodite and her son Eros took fish form to escape the monster Typhon, and tied themselves together so they would not be separated in the water.",
+   "ancient_use": "Pisces matters more to astronomy than its faintness suggests: the vernal equinox — the point where the Sun crosses the celestial equator each spring, and the origin of the whole celestial coordinate grid — has sat within Pisces since roughly the first century CE, having precessed out of Aries.",
+   "story": "The cord is the memorable part: two loose strings of faint stars meeting at Alrescha, 'the knot'. One fish swims west, the other north, and the westward one is marked by the Circlet, a small ring of stars below Andromeda. Because the equinox point lies here, Pisces is where astronomers set their zero of right ascension — the sky's prime meridian runs through these very ordinary stars.",
+   "brightest": "Alpherg (η Piscium)"
+  },
+  {
+   "abbrev": "UMa",
+   "name": "Ursa Major",
+   "group": "circumpolar",
+   "lines": [
+    [
+     29,
+     116
+    ],
+    [
+     116,
+     57
+    ],
+    [
+     57,
+     62
+    ],
+    [
+     62,
+     90
+    ],
+    [
+     90,
+     62
+    ],
+    [
+     62,
+     57
+    ],
+    [
+     57,
+     116
+    ],
+    [
+     116,
+     92
+    ],
+    [
+     92,
+     181
+    ],
+    [
+     76,
+     10
+    ],
+    [
+     10,
+     27
+    ],
+    [
+     27,
+     29
+    ],
+    [
+     29,
+     76
+    ],
+    [
+     76,
+     8
+    ],
+    [
+     8,
+     21
+    ],
+    [
+     21,
+     11
+    ],
+    [
+     10,
+     111
+    ],
+    [
+     111,
+     127
+    ],
+    [
+     127,
+     111
+    ],
+    [
+     111,
+     82
+    ],
+    [
+     82,
+     127
+    ],
+    [
+     127,
+     27
+    ],
+    [
+     27,
+     127
+    ],
+    [
+     127,
+     66
+    ],
+    [
+     66,
+     100
+    ],
+    [
+     100,
+     65
+    ]
+   ],
+   "myth_fact": "Callisto, a companion of Artemis, was turned into a bear. Years later her son Arcas nearly killed her while hunting; Zeus caught them both up into the sky, mother and son, as the Great and Little Bear.",
+   "ancient_use": "Its seven brightest stars are the most useful signpost in the northern sky. The two at the end of the bowl, Dubhe and Merak, point almost exactly at Polaris, giving you true north at a glance — a navigation trick used continuously for thousands of years. In the American South the same shape was the 'Drinking Gourd' that guided people escaping slavery northwards.",
+   "story": "Almost every culture has claimed these stars: a plough in England, a wagon in Germany, a saucepan in France, a bear across both Siberia and Indigenous North America — a coincidence so striking that some argue the bear story crossed the Bering land bridge with its tellers. At the bend of the handle, sharp eyes can split Mizar into two stars; the faint companion Alcor was a traditional test of eyesight. Five of the seven stars drift through space together as a genuine family, while Dubhe and Alkaid are unrelated passers-by — so the shape will slowly deform over the next hundred thousand years.",
+   "brightest": "Alioth (ε Ursae Majoris)"
+  },
+  {
+   "abbrev": "UMi",
+   "name": "Ursa Minor",
+   "group": "circumpolar",
+   "lines": [
+    [
+     14,
+     182
+    ],
+    [
+     182,
+     167
+    ],
+    [
+     167,
+     178
+    ],
+    [
+     178,
+     197
+    ],
+    [
+     197,
+     58
+    ],
+    [
+     58,
+     18
+    ],
+    [
+     18,
+     178
+    ]
+   ],
+   "myth_fact": "The Little Bear is usually Arcas, Callisto's son, lifted into the sky beside his transformed mother. An older version makes these stars the nymphs of Mount Ida who hid and nursed the infant Zeus from his child-devouring father.",
+   "ancient_use": "The Greeks called this group Phoenice, because Phoenician sailors steered by it while Greek sailors were still using the Great Bear — a smaller circle around the pole makes a more accurate compass. Polaris sits less than a degree from the true celestial pole, so it barely moves all night while everything else wheels around it.",
+   "story": "Polaris has not always been the North Star and will not remain one. Because the Earth's axis traces a 26,000-year circle, the pole was near Thuban in Draco when the Egyptian pyramids were built, drifted through empty sky in Greek and Roman times — which is why classical writers describe the pole as starless — and is closest to Polaris right around now. In about 12,000 years the bright star Vega will take the job.",
+   "brightest": "Polaris (α Ursae Minoris)"
+  },
+  {
+   "abbrev": "Cas",
+   "name": "Cassiopeia",
+   "group": "circumpolar",
+   "lines": [
+    [
+     24,
+     22
+    ],
+    [
+     22,
+     20
+    ],
+    [
+     20,
+     36
+    ],
+    [
+     36,
+     80
+    ]
+   ],
+   "myth_fact": "Queen Cassiopeia boasted that she and her daughter Andromeda were more beautiful than the sea nymphs. Poseidon answered with the sea monster Cetus, and only chaining Andromeda to a rock would appease it.",
+   "ancient_use": "The bright zigzag of five stars is unmistakable and sits opposite the Great Bear across the pole, so the two take turns: when one is low, the other is high. Northern navigators used Cassiopeia as a backup pointer to Polaris whenever the Dipper was hidden below the horizon or lost in haze.",
+   "story": "Perseus arrived in time, killed Cetus and married Andromeda, and the whole cast — Cassiopeia, Cepheus, Andromeda, Perseus, Cetus — was set in one neighbouring group of constellations, the sky's only complete family drama. Cassiopeia's punishment for her vanity was to be bound to her throne and spun around the pole, hanging upside down for half of every night. In 1572 Tycho Brahe watched a new star blaze up here, bright enough to see by day; his careful proof that it lay far beyond the Moon helped break the ancient belief in an unchanging heaven.",
+   "brightest": "Schedar (α Cassiopeiae)"
+  },
+  {
+   "abbrev": "Cep",
+   "name": "Cepheus",
+   "group": "circumpolar",
+   "lines": [
+    [
+     88,
+     30
+    ],
+    [
+     30,
+     71
+    ],
+    [
+     71,
+     94
+    ],
+    [
+     94,
+     71
+    ],
+    [
+     71,
+     70
+    ],
+    [
+     70,
+     94
+    ],
+    [
+     94,
+     157
+    ],
+    [
+     157,
+     85
+    ],
+    [
+     85,
+     166
+    ],
+    [
+     166,
+     172
+    ],
+    [
+     172,
+     30
+    ],
+    [
+     168,
+     88
+    ]
+   ],
+   "myth_fact": "Cepheus was the king who agreed to chain his own daughter Andromeda to the rocks to save his kingdom from the sea monster — the least sympathetic figure in the family, and fittingly the dimmest constellation among them.",
+   "ancient_use": "Cepheus is a lopsided house or steeple wedged between Cassiopeia and Draco, close enough to the pole that from Bergamo it never sets. Its position made it useful mainly as filler between the more memorable circumpolar shapes.",
+   "story": "This faint king turned out to hold the key to the size of the universe. In 1784 John Goodricke noticed that Delta Cephei brightens and dims on a regular five-day cycle. More than a century later Henrietta Swan Leavitt found that for stars of this type — now called Cepheid variables after this one — the pulsation period reveals the star's true luminosity. Compare that with how bright it appears and you have its distance. Hubble used Cepheids to prove that other galaxies exist far outside our own, and the entire cosmic distance ladder still rests on the star at the heart of Cepheus.",
+   "brightest": "Alderamin (α Cephei)"
+  },
+  {
+   "abbrev": "Dra",
+   "name": "Draco",
+   "group": "circumpolar",
+   "lines": [
+    [
+     130,
+     133
+    ],
+    [
+     133,
+     114
+    ],
+    [
+     114,
+     74
+    ],
+    [
+     74,
+     148
+    ],
+    [
+     148,
+     39
+    ],
+    [
+     39,
+     67
+    ],
+    [
+     67,
+     169
+    ],
+    [
+     169,
+     98
+    ],
+    [
+     98,
+     169
+    ],
+    [
+     169,
+     63
+    ],
+    [
+     63,
+     132
+    ],
+    [
+     132,
+     63
+    ],
+    [
+     63,
+     121
+    ],
+    [
+     121,
+     196
+    ],
+    [
+     196,
+     42
+    ],
+    [
+     42,
+     23
+    ],
+    [
+     23,
+     121
+    ],
+    [
+     121,
+     63
+    ]
+   ],
+   "myth_fact": "Draco is Ladon, the hundred-headed dragon that guarded the golden apples in the garden of the Hesperides. Killing it was the eleventh labour of Heracles, who is drawn in the neighbouring sky with his foot on the dragon's head.",
+   "ancient_use": "Draco's star Thuban was the pole star around 2700 BCE, and the descending passage of the Great Pyramid at Giza points down at where Thuban then stood — one of the clearest surviving links between a building and a star.",
+   "story": "The dragon is enormous, coiling more than halfway around the pole between the two Bears, but it is made of faint stars and takes patience to trace. Its head is a compact quadrilateral, and one of those stars, Eltanin, passes directly overhead as seen from London. Trying to measure its parallax in 1725, James Bradley found it shifting in a way no parallax could explain and instead discovered the aberration of starlight — the first direct proof that the Earth really is moving through space, and a measurement of the speed of light.",
+   "brightest": "Eltanin (γ Draconis)"
+  }
+ ]
+}

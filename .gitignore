@@ -1,0 +1,7 @@
+.DS_Store
+*.log
+
+# Upstream catalogues are large and regenerable — see README, "Rebuilding the data".
+hyg*.csv
+hygdata_*.csv
+iau.json
