@@ -13,6 +13,7 @@
   --bad: #e0736b;
   --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
           "Helvetica Neue", Arial, sans-serif;
+  --serif: "EB Garamond", serif;
 }
 
 * { box-sizing: border-box; }
@@ -21,7 +22,7 @@ html, body { height: 100%; margin: 0; }
 body {
   background: #04060c;
   color: var(--ink);
-  font: 14px/1.55 var(--sans);
+  font: 14px/1.55 var(--serif);
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
 }
@@ -270,7 +271,7 @@ input.bad { border-color: var(--bad); background: rgba(224, 115, 107, 0.14); }
   box-shadow: inset 0 0 0 1px rgba(227, 199, 127, 0.32);
 }
 .crow.down { opacity: 0.42; }
-.cname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: "Libre Bodoni", serif; }
 .cwhere { font-size: 11px; color: var(--ink-3); text-align: right; }
 .crow.sel .cwhere { color: var(--ink-2); }
 
@@ -299,6 +300,344 @@ input.bad { border-color: var(--bad); background: rgba(224, 115, 107, 0.14); }
 .panel-foot { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line); }
 .panel-foot p { margin: 0; font-size: 10.5px; line-height: 1.6; color: var(--ink-3); }
 .panel-foot strong { color: var(--ink-2); font-weight: 600; }
+
+/* ------------------------------------------------------- scene switcher --- */
+
+/* Deliberately quiet: this is a control for building the sequence, not part of
+   what a visitor is meant to look at. */
+.scene-bar {
+  position: absolute; z-index: 5;
+  left: 0; right: 0; bottom: 0;
+  padding: 26px 18px 14px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  background: linear-gradient(180deg, transparent, rgba(3, 5, 10, 0.78) 62%);
+  pointer-events: none;
+}
+.scene-bar[hidden] { display: none !important; }
+.scene-bar > * { pointer-events: auto; }
+
+.scene-pills { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.scene-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 11px 5px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--glass);
+  color: var(--ink-3);
+  font: 600 11px/1 var(--sans);
+  cursor: pointer;
+  backdrop-filter: blur(7px);
+}
+.scene-pill b {
+  display: inline-grid; place-items: center;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 9.5px; color: var(--ink-2);
+}
+.scene-pill:hover { color: var(--ink); border-color: rgba(150, 180, 220, 0.4); }
+.scene-pill.active {
+  background: rgba(227, 199, 127, 0.16);
+  border-color: rgba(227, 199, 127, 0.5);
+  color: #f0dfae;
+}
+.scene-pill.active b { background: rgba(227, 199, 127, 0.28); color: #fbeec9; }
+
+@media (max-width: 640px) {
+  .scene-bar { padding: 18px 10px 10px; gap: 6px; }
+  .scene-pill { padding: 4px 9px 4px 6px; font-size: 10px; }
+}
+
+/* --------------------------------------------------------- zodiac scene --- */
+
+/* Scene 1: the star canvas and its HUD step aside (see #sky[hidden] below and
+   js/app.js's updateSceneVisibility) and this plays over the same backdrop
+   video instead — the twelve signs, one centred and lit, its neighbours
+   dimmed either side, cycling on their own. */
+#sky[hidden] { display: none !important; }
+
+.zodiac-scene {
+  position: absolute; inset: 0; z-index: 2;
+  overflow: hidden;
+  display: flex; align-items: center;
+}
+.zodiac-scene[hidden] { display: none !important; }
+
+.zodiac-track {
+  display: flex; align-items: center; gap: 7vw;
+  padding: 0 4px;
+  will-change: transform;
+  transition: transform 0.9s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.zodiac-slide {
+  position: relative;
+  flex: 0 0 clamp(190px, 25vw, 360px);
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+  text-align: center;
+  cursor: pointer;
+  opacity: 0.32;
+  filter: grayscale(0.9) brightness(0.6);
+  transform: scale(0.72);
+  transition: opacity 0.9s ease, filter 0.9s ease,
+              transform 0.9s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.zodiac-slide:hover { opacity: 0.55; }
+.zodiac-slide.active { opacity: 1; filter: none; transform: scale(1); cursor: default; }
+
+.zodiac-card {
+  margin: 0; padding: 10px 22px;
+  color: rgba(255, 255, 255, 0.75);
+  font: 700 22px/1 "Libre Bodoni", serif;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
+  transition: color 0.9s ease;
+}
+.zodiac-slide.active .zodiac-card {
+  color: #fff;
+  font-size: 30px;
+}
+
+.zodiac-art { width: 100%; height: auto; max-height: 42vh; object-fit: contain; }
+
+.zodiac-fact {
+  /* Absolutely positioned so its width isn't pinched by the slide's own
+     (deliberately narrow) column — it needs room to sit in 2-3 lines,
+     wider than the constellation art above it. */
+  position: absolute; top: 100%; left: 50%;
+  transform: translateX(-50%);
+  margin: 20px 0 0; width: min(574px, 55vw);
+  font: 500 15px/1.6 "EB Garamond", serif;
+  color: #ece5db; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.65);
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.6s ease;
+}
+.zodiac-slide.active .zodiac-fact {
+  opacity: 1; visibility: visible;
+  transition: opacity 0.6s ease 0.35s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zodiac-track, .zodiac-slide, .zodiac-card, .zodiac-fact { transition: none; }
+}
+
+@media (max-width: 640px) {
+  .zodiac-track { gap: 10vw; }
+  .zodiac-fact { font-size: 13px; width: min(280px, 82vw); }
+  .zodiac-card { font-size: 17px; padding: 8px 16px; }
+  .zodiac-slide.active .zodiac-card { font-size: 22px; }
+}
+
+/* ------------------------------------------------------ birthdate scene --- */
+
+/* Scene 2: same take-over as the zodiac scene above — sky and HUD hide, the
+   backdrop keeps playing — but here it's two held slides, not a cycle: ask,
+   then (once given) an "analysing" hold before scene 3 picks it up. */
+.birthdate-scene {
+  position: absolute; inset: 0; z-index: 2;
+  overflow: hidden;
+}
+.birthdate-scene[hidden] { display: none !important; }
+
+.bd-slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity 0.8s ease;
+}
+.bd-slide.active { opacity: 1; visibility: visible; pointer-events: auto; }
+
+.bd-question {
+  margin: 0; max-width: 640px; text-align: center;
+  font: 700 26px/1.4 "Libre Bodoni", serif; color: #fff;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
+}
+.bd-mic {
+  margin-top: 30px; display: flex; align-items: center; gap: 10px;
+  padding: 12px 22px; border-radius: 999px;
+  border: 1px solid var(--line); background: rgba(255, 255, 255, 0.06);
+  color: var(--ink); font: 500 14px "EB Garamond", serif;
+  cursor: pointer; transition: background 0.3s ease, border-color 0.3s ease;
+}
+.bd-mic:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(150, 180, 220, 0.4); }
+.bd-mic[hidden] { display: none !important; }
+.bd-mic-dot {
+  width: 9px; height: 9px; border-radius: 50%; background: #6f7d94; flex: 0 0 auto;
+  transition: background 0.3s ease;
+}
+.bd-mic.listening .bd-mic-dot {
+  background: #e0736b;
+  animation: bdListenPulse 1.4s ease-in-out infinite;
+}
+.bd-mic.listening { border-color: rgba(224, 115, 107, 0.5); }
+@keyframes bdListenPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(224, 115, 107, 0.55); }
+  50% { box-shadow: 0 0 0 7px rgba(224, 115, 107, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bd-mic.listening .bd-mic-dot { animation: none; }
+}
+
+.bd-heard {
+  margin: 14px 0 0; min-height: 1.4em; text-align: center;
+  font: 500 13px "EB Garamond", serif; color: var(--ink-2);
+  max-width: 420px;
+}
+
+.bd-linklike {
+  margin-top: 16px; border: none; background: none; padding: 0;
+  color: var(--ink-3); font: 500 12.5px "EB Garamond", serif;
+  text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+.bd-linklike:hover { color: var(--ink-2); }
+
+.bd-form { margin-top: 20px; display: flex; align-items: center; gap: 10px; }
+.bd-form[hidden] { display: none !important; }
+.bd-input {
+  font: 500 15px "EB Garamond", serif; color-scheme: dark;
+  color: var(--ink); background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--line); border-radius: 8px;
+  padding: 9px 14px;
+}
+.bd-go {
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 1px solid var(--line); background: rgba(255, 255, 255, 0.08);
+  color: var(--ink); font-size: 16px; line-height: 1; cursor: pointer;
+}
+.bd-go:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+
+.bd-analyzing { flex-direction: row; justify-content: center; gap: 9vw; }
+.bd-glyph {
+  width: clamp(140px, 18vw, 240px); height: auto;
+  opacity: 0.3; filter: grayscale(1) brightness(0.65);
+}
+.bd-analyzing-text {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  text-align: center; white-space: nowrap;
+}
+.bd-eyebrow {
+  margin: 0 0 6px;
+  font: 500 15px "EB Garamond", serif; color: rgba(255, 255, 255, 0.75);
+}
+.bd-title {
+  margin: 0; font: 700 34px "Libre Bodoni", serif; color: #fff;
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bd-slide { transition: none; }
+}
+
+@media (max-width: 640px) {
+  .bd-question { font-size: 20px; max-width: 88%; }
+  .bd-title { font-size: 24px; }
+  .bd-eyebrow { font-size: 13px; }
+  .bd-glyph { width: clamp(90px, 26vw, 160px); }
+  .bd-analyzing { gap: 4vw; }
+}
+
+/* ------------------------------------------------------------ card scene --- */
+
+/* Scene 3: the sign the birth date resolved to is on screen now, large and
+   dim — present but not announced. Same take-over as scenes 1 and 2. */
+.card-scene {
+  position: absolute; inset: 0; z-index: 2;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.card-scene[hidden] { display: none !important; }
+
+.card-art {
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0.4; filter: grayscale(1) brightness(0.7);
+}
+.card-art svg { max-height: 82vh; max-width: 90vw; width: auto; height: auto; display: block; }
+
+/* The art is injected inline (not an <img>) so these two pieces of it can be
+   picked out and animated: each star glyph gets its own randomised twinkle
+   (delay/duration set per-element in app.js), the join-the-dots lines get one
+   slow, shared, low-amplitude pulse. Both stay subtle — this sign isn't
+   revealed yet, just quietly alive. */
+.card-art .card-star {
+  animation: card-star-twinkle 5s ease-in-out infinite;
+}
+@keyframes card-star-twinkle {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0)); }
+  50% { filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.9))
+               drop-shadow(0 0 26px rgba(255, 255, 255, 0.5)); }
+}
+.card-art .card-lines {
+  animation: card-lines-glow 6s ease-in-out infinite;
+}
+@keyframes card-lines-glow {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0)); }
+  50% { filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.45)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-art .card-star, .card-art .card-lines { animation: none; }
+}
+
+.card-text {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  text-align: center; padding: 0 24px;
+}
+.card-sub {
+  margin: 0 0 10px;
+  font: 500 17px "EB Garamond", serif; color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
+}
+.card-title {
+  margin: 0; font: 700 40px "Libre Bodoni", serif; color: #fff;
+  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.65);
+}
+/* Stands in for the card-detection model a friend is wiring up separately —
+   until then, this scene advances to the reveal on a tap. */
+.card-scene { cursor: pointer; }
+.card-hint {
+  margin: 16px 0 0;
+  font: 500 12px "EB Garamond", serif; letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.45);
+  animation: card-hint-fade 2.4s ease-in-out infinite;
+}
+@keyframes card-hint-fade { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.9; } }
+@media (prefers-reduced-motion: reduce) { .card-hint { animation: none; } }
+
+@media (max-width: 640px) {
+  .card-art { max-height: 66vh; }
+  .card-sub { font-size: 14px; }
+  .card-title { font-size: 26px; }
+}
+
+/* ---------------------------------------------------------- reveal scene --- */
+
+/* Scene 4: the reveal. The card prompt in scene 3 currently advances here on
+   a tap — a stand-in for the moment a card-detection model triggers it. */
+.reveal-scene {
+  position: absolute; inset: 0; z-index: 2;
+  overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 30px;
+}
+.reveal-scene[hidden] { display: none !important; }
+
+.reveal-card {
+  margin: 0; font: 700 40px "Libre Bodoni", serif; color: #fff;
+  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.65);
+}
+
+.reveal-art-wrap { position: relative; display: inline-flex; }
+.reveal-art svg { max-height: 56vh; max-width: 74vw; width: auto; height: auto; display: block; }
+
+.reveal-traits { position: absolute; inset: 0; }
+.reveal-trait {
+  position: absolute; white-space: nowrap;
+  font: 500 20px "EB Garamond", serif; color: #ece5db;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.65);
+}
+
+@media (max-width: 640px) {
+  .reveal-card { font-size: 26px; }
+  .reveal-art svg { max-height: 44vh; max-width: 84vw; }
+  .reveal-trait { font-size: 15px; }
+}
 
 /* ----------------------------------------------------------- the story --- */
 

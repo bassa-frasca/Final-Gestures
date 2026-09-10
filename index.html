@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tales from the Stars</title>
 <meta name="description" content="Stand outside and look up. A real-time view of the night sky with the mythology and history behind each constellation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Bodoni:ital,wght@0,400..700;1,400..700&family=EB+Garamond:ital,wght@0,400..800;1,400..800&display=swap">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -27,6 +30,60 @@
 
     <canvas id="sky" aria-label="View of the night sky. Use the constellation lists beside the sky for a text description of what is up."></canvas>
     <div id="tooltip" class="tooltip" hidden></div>
+
+    <!-- Scene 1 only: the ordinary sky steps aside and the twelve signs play here
+         instead, one at a time, over the same backdrop video. -->
+    <div id="zodiacScene" class="zodiac-scene" hidden aria-live="polite">
+      <div class="zodiac-track" id="zodiacTrack"></div>
+    </div>
+
+    <!-- Scene 2 only: ask for a birth date, then hold on "analysing" once it's
+         given. Same take-over as scene 1 — sky and HUD hide, backdrop keeps playing. -->
+    <div id="birthdateScene" class="birthdate-scene" hidden aria-live="polite">
+      <div class="bd-slide bd-ask" data-step="ask">
+        <p class="bd-question">Let&rsquo;s hear your birth date?</p>
+        <button type="button" id="bdMicBtn" class="bd-mic" aria-label="Tap to speak your birth date">
+          <span class="bd-mic-dot"></span>
+          <span class="bd-mic-label">Tap to speak</span>
+        </button>
+        <p class="bd-heard" id="bdHeard" aria-live="polite"></p>
+        <button type="button" id="bdTypeInstead" class="bd-linklike">or type it instead</button>
+        <form id="birthdateForm" class="bd-form" hidden>
+          <input type="date" id="birthdateInput" class="bd-input" aria-label="Your birth date" required>
+          <button type="submit" class="bd-go" aria-label="Continue">&rarr;</button>
+        </form>
+      </div>
+      <div class="bd-slide bd-analyzing" data-step="analyzing">
+        <img class="bd-glyph" id="bdGlyph0" src="" alt="" aria-hidden="true">
+        <div class="bd-analyzing-text">
+          <p class="bd-eyebrow">Analyzing</p>
+          <p class="bd-title">Space and Time</p>
+        </div>
+        <img class="bd-glyph" id="bdGlyph1" src="" alt="" aria-hidden="true">
+      </div>
+    </div>
+
+    <!-- Scene 3 only: the detected constellation sits large and dim in the
+         background — not revealed yet, just present — while the card prompt
+         plays over it. Same take-over as scenes 1 and 2. -->
+    <div id="cardScene" class="card-scene" hidden aria-live="polite">
+      <div class="card-art" id="cardArt" aria-hidden="true"></div>
+      <div class="card-text">
+        <p class="card-sub">Stars have all your answers now..</p>
+        <p class="card-title">Pull up the card 2</p>
+        <p class="card-hint">tap to continue</p>
+      </div>
+    </div>
+
+    <!-- Scene 4 only: the reveal. Same take-over as scenes 1-3 — a stand-in
+         for the moment a card-detection model will trigger this directly. -->
+    <div id="revealScene" class="reveal-scene" hidden aria-live="polite">
+      <p class="reveal-card" id="revealCard"></p>
+      <div class="reveal-art-wrap">
+        <div class="reveal-art" id="revealArt" aria-hidden="true"></div>
+        <div class="reveal-traits" id="revealTraits"></div>
+      </div>
+    </div>
 
     <!-- where and when, top left -->
     <div class="hud hud-tl">
@@ -53,6 +110,10 @@
         Explore
       </button>
     </div>
+
+    <!-- Scene switcher: an authoring control, not part of the experience. Its
+         contents are built in js/app.js from the SCENES list. -->
+    <div id="sceneBar" class="scene-bar" aria-label="Scene switcher"></div>
 
     <!-- browse and settings, slides in over the sky -->
     <aside id="panel" class="story panel" hidden>
@@ -115,6 +176,7 @@
           <label class="chk"><input type="checkbox" id="tBackdrop"><span>Deep-space backdrop</span></label>
           <label class="chk"><input type="checkbox" id="tGround"><span>Show the ground</span></label>
           <label class="chk"><input type="checkbox" id="tTwinkle"><span>Twinkling</span></label>
+          <label class="chk"><input type="checkbox" id="tSceneBar"><span>Scene switcher</span></label>
         </div>
       </details>
 

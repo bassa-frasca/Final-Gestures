@@ -783,7 +783,7 @@ const Sky = (() => {
         ctx.save();
         ctx.globalAlpha = 0.62 * starDim * edgeFade;
         ctx.fillStyle = '#dce5f2';
-        ctx.font = `${10.5 * scale}px ui-sans-serif, system-ui, sans-serif`;
+        ctx.font = `${10.5 * scale}px "Libre Bodoni", serif`;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillText(s.n, p.x + 7 * scale, p.y);
@@ -827,7 +827,7 @@ const Sky = (() => {
         const hovered = state.hovered === entry.abbrev;
         const muted = state.selected && !selected;
         ctx.save();
-        ctx.font = `${selected ? 600 : 500} ${(selected ? 13.5 : 12) * scale}px ui-sans-serif, system-ui, sans-serif`;
+        ctx.font = `${selected ? 600 : 500} ${(selected ? 13.5 : 12) * scale}px "Libre Bodoni", serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         const tw = ctx.measureText(entry.con.name).width;

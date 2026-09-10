@@ -17,11 +17,73 @@
   const BERGAMO = { lat: 45.695, lon: 9.670, tz: 'Europe/Rome', name: 'Bergamo, Italy' };
   const $ = (id) => document.getElementById(id);
 
+  /*
+   * The scene sequence. Nothing here is built yet: this is the running order and the
+   * brief for each step, so the switcher below has something to switch between and
+   * each scene has one obvious place to be implemented. Every scene currently draws
+   * the ordinary sky; `intent` is the note to design against.
+   */
+  const SCENES = [
+    { id: 0, label: 'Sky',       title: 'Open sky',
+      intent: 'Backdrop video with the star overlay on top, and a slight motion. Where it already is.' },
+    { id: 1, label: 'Zodiacs',   title: 'About the zodiacs',
+      intent: 'Information about the zodiacs appears over the visuals, which keep playing underneath.' },
+    { id: 2, label: 'Birthdate', title: 'Ask the birthdate',
+      intent: 'Slow transition to "ready to know your zodiac?" then "let\u2019s hear your birthdate".' },
+    { id: 3, label: 'Card',      title: 'Lift the card',
+      intent: '"The universe now has your zodiac." Then "pull up the card \u20182\u2019 from the plate and lift it towards the universe."' },
+    { id: 4, label: 'Reveal',    title: 'You are a Gemini',
+      intent: 'The video zooms in on the detected zodiac and holds it highlighted on screen: "you are a Gemini", plus two traits.' },
+    { id: 5, label: 'Gestures',  title: 'Three directions',
+      intent: 'Slow transition to three directions with gesture visuals: "interested to explore what stars have to tell about your interests? make the gestures to explore more."' },
+    { id: 6, label: 'Creature',  title: 'The figure moves',
+      intent: 'Zoom back in on the constellation while text speaks about it. The figure may take the shape of its animal or creature and move in very slow motion.' },
+  ];
+
   // Zodiac in the order the Sun travels through them, which is how the signs are
   // always taught — not by brightness or by what happens to be up.
   const ZODIAC_ORDER = ['Ari', 'Tau', 'Gem', 'Cnc', 'Leo', 'Vir',
                         'Lib', 'Sco', 'Sgr', 'Cap', 'Aqr', 'Psc'];
   const CIRCUMPOLAR_ORDER = ['UMa', 'UMi', 'Cas', 'Cep', 'Dra'];
+
+  // Artwork for the scene-1 slideshow, numbered in the same Sun-order as above.
+  const ZODIAC_FILES = {
+    Ari: '01-aries', Tau: '02-taurus', Gem: '03-gemini', Cnc: '04-cancer',
+    Leo: '05-leo', Vir: '06-virgo', Lib: '07-libra', Sco: '08-scorpius',
+    Sgr: '09-sagittarius', Cap: '10-capricornus', Aqr: '11-aquarius', Psc: '12-pisces',
+  };
+  const ZODIAC_SLIDE_MS = 6000;
+
+  // Tropical zodiac boundaries — western convention, sign holds from the first
+  // date to the day before the next sign's first date.
+  const ZODIAC_RANGES = [
+    ['Cap', [12, 22], [1, 19]], ['Aqr', [1, 20], [2, 18]], ['Psc', [2, 19], [3, 20]],
+    ['Ari', [3, 21], [4, 19]], ['Tau', [4, 20], [5, 20]], ['Gem', [5, 21], [6, 20]],
+    ['Cnc', [6, 21], [7, 22]], ['Leo', [7, 23], [8, 22]], ['Vir', [8, 23], [9, 22]],
+    ['Lib', [9, 23], [10, 22]], ['Sco', [10, 23], [11, 21]], ['Sgr', [11, 22], [12, 21]],
+  ];
+  function zodiacFromMonthDay(month, day) {
+    for (const [abbrev, [m1, d1], [m2, d2]] of ZODIAC_RANGES) {
+      if ((month === m1 && day >= d1) || (month === m2 && day <= d2)) return abbrev;
+    }
+    return null;
+  }
+
+  // The three characteristics shown (and spoken) at the scene-4 reveal.
+  const ZODIAC_TRAITS = {
+    Ari: ['Bold starter', 'Independent', 'A little impatient'],
+    Tau: ['Steady', 'Loyal', 'Takes its time deciding'],
+    Gem: ['Curious', 'Quick-witted', 'Craves variety'],
+    Cnc: ['Nurturing', 'Protective', 'Deeply sentimental'],
+    Leo: ['Warm', 'Magnetic', 'Loves the spotlight'],
+    Vir: ['Thoughtful', 'Attentive', 'Always a step ahead'],
+    Lib: ['Charming', 'Fair-minded', 'Forever weighing options'],
+    Sco: ['Intense', 'Loyal', 'Hard to read'],
+    Sgr: ['Adventurous', 'Honest', 'Free-spirited'],
+    Cap: ['Ambitious', 'Grounded', 'Quietly determined'],
+    Aqr: ['Independent', 'Original', 'A little apart'],
+    Psc: ['Dreamy', 'Empathetic', 'A little elsewhere'],
+  };
 
   // How dark your sky is, in words. The number is the faintest star the eye catches.
   const SKY_CONDITIONS = [
@@ -53,6 +115,12 @@
     twinkle: true,
     selected: null,
     hovered: null,
+    scene: 0,
+    showSceneBar: true,
+    zodiacIndex: 0,
+    birthdateStep: 'ask',
+    birthDate: null,
+    detectedZodiac: null,
   };
 
   let data = null, frame = null, computed = null;
@@ -192,10 +260,13 @@
     // the panel, the sky is edge to edge and there is nothing to reserve room for.
     state.bottomInset = 0;
     computed = computeSky(state.date);
-    frame = Sky.render($('sky'), state, data, computed,
-      { t: animClock, twinkle: state.twinkle });
+    if (state.scene < 1 || state.scene > 4) {
+      frame = Sky.render($('sky'), state, data, computed,
+        { t: animClock, twinkle: state.twinkle });
+    }
     renderOverlay();
     renderLists();
+    renderSceneBar();
   }
 
   function fmtClock(date) {
@@ -225,6 +296,332 @@
       if (d > 180) d = 360 - d;
       b.classList.toggle('active', d < 22.5);
     }
+  }
+
+  /**
+   * The scene switcher. An authoring control rather than part of the experience —
+   * it exists so the seven scenes can be stepped through and discussed. Hidden via
+   * the toggle under *What you can see* when the sky needs to be clean.
+   */
+  function renderSceneBar() {
+    const bar = $('sceneBar');
+    bar.hidden = !state.showSceneBar;
+    if (!state.showSceneBar) return;
+
+    for (const b of bar.querySelectorAll('.scene-pill')) {
+      b.classList.toggle('active', Number(b.dataset.scene) === state.scene);
+    }
+  }
+
+  function setScene(n) {
+    const next = Math.max(0, Math.min(SCENES.length - 1, n));
+    if (next === state.scene) return;
+    state.scene = next;
+    renderSceneBar();
+    updateSceneVisibility();
+    draw();
+  }
+
+  /**
+   * Scenes 1-4 take over from the ordinary sky: the star canvas and its HUD
+   * hide (the backdrop video keeps playing underneath, untouched) and that
+   * scene's own overlay starts. Every other scene restores the ordinary sky.
+   */
+  function updateSceneVisibility() {
+    const zodiacScene = state.scene === 1;
+    const birthdateScene = state.scene === 2;
+    const cardScene = state.scene === 3;
+    const revealScene = state.scene === 4;
+    const takeover = zodiacScene || birthdateScene || cardScene || revealScene;
+    $('sky').hidden = takeover;
+    document.querySelector('.hud-tl').hidden = takeover;
+    document.querySelector('.hud-tr').hidden = takeover;
+    $('zodiacScene').hidden = !zodiacScene;
+    $('birthdateScene').hidden = !birthdateScene;
+    $('cardScene').hidden = !cardScene;
+    $('revealScene').hidden = !revealScene;
+    if (zodiacScene) startZodiacSlideshow(); else stopZodiacSlideshow();
+    if (birthdateScene) startBirthdateScene(); else stopBirthdateScene();
+    if (cardScene) renderCardScene();
+    if (revealScene) renderRevealScene();
+  }
+
+  /* ------------------------------------------------------- zodiac scene --- */
+
+  function buildZodiacTrack() {
+    $('zodiacTrack').innerHTML = ZODIAC_ORDER.map((abbrev) => {
+      const con = data.conByAbbrev[abbrev];
+      return `<div class="zodiac-slide" data-abbrev="${abbrev}">
+        <p class="zodiac-card">${con.name}</p>
+        <img class="zodiac-art" src="assets/constellations/${ZODIAC_FILES[abbrev]}.svg"
+             alt="${con.name}" draggable="false">
+        <p class="zodiac-fact">${con.ancient_use || ''}</p>
+      </div>`;
+    }).join('');
+  }
+
+  // Slides sit in one long flex row; centring the current one is a matter of
+  // measuring its own box and sliding the row so that box lands mid-screen —
+  // no hard-coded widths to keep in sync with the responsive CSS.
+  function centerZodiacTrack(animate) {
+    const scene = $('zodiacScene');
+    const track = $('zodiacTrack');
+    const slide = track.children[state.zodiacIndex];
+    if (!slide) return;
+    track.style.transition = animate ? '' : 'none';
+    const shift = scene.clientWidth / 2 - (slide.offsetLeft + slide.offsetWidth / 2);
+    track.style.transform = `translateX(${shift}px)`;
+    if (!animate) void track.offsetWidth; // flush, so the next change re-enables the transition
+  }
+
+  function renderZodiacSlide(animate = true) {
+    const track = $('zodiacTrack');
+    for (const [i, el] of [...track.children].entries()) {
+      el.classList.toggle('active', i === state.zodiacIndex);
+    }
+    centerZodiacTrack(animate);
+  }
+
+  let zodiacTimer = null;
+  function startZodiacSlideshow() {
+    stopZodiacSlideshow();
+    renderZodiacSlide(false);
+    zodiacTimer = setInterval(() => {
+      state.zodiacIndex = (state.zodiacIndex + 1) % ZODIAC_ORDER.length;
+      renderZodiacSlide(true);
+    }, ZODIAC_SLIDE_MS);
+  }
+  function stopZodiacSlideshow() {
+    if (zodiacTimer) { clearInterval(zodiacTimer); zodiacTimer = null; }
+  }
+
+  /* ---------------------------------------------------- birthdate scene --- */
+
+  // Two constellations standing in as ambient decoration while "analysing"
+  // holds — any pair works, since nothing about them is meant to be read yet.
+  const BD_GLYPHS = ['Gem', 'Sco'];
+  const BD_MONTHS = ['january', 'february', 'march', 'april', 'may', 'june',
+                      'july', 'august', 'september', 'october', 'november', 'december'];
+  // The detection hold is deliberately slow — never under 5s — so it reads as
+  // work being done, not an instant lookup.
+  const BD_DETECT_MIN_MS = 5000, BD_DETECT_MAX_MS = 7000;
+
+  function buildBirthdateGlyphs() {
+    BD_GLYPHS.forEach((abbrev, i) => {
+      const img = $(`bdGlyph${i}`);
+      if (img) img.src = `assets/constellations/${ZODIAC_FILES[abbrev]}.svg`;
+    });
+  }
+
+  function setBirthdateStep(step) {
+    state.birthdateStep = step;
+    for (const el of $('birthdateScene').querySelectorAll('.bd-slide')) {
+      el.classList.toggle('active', el.dataset.step === step);
+    }
+  }
+
+  // Speech gives back numerals for spoken numbers ("march 5th 1998"), so a
+  // month name plus a 1-2 digit day plus an optional 4-digit year covers the
+  // ordinary ways someone says a birthday.
+  function parseSpokenDate(text) {
+    const t = text.toLowerCase();
+    const monthIdx = BD_MONTHS.findIndex((m) => t.includes(m));
+    if (monthIdx === -1) return null;
+    const dayMatch = t.match(/\b([12]?\d|3[01])(st|nd|rd|th)?\b/);
+    if (!dayMatch) return null;
+    const day = Number(dayMatch[1]);
+    if (day < 1 || day > 31) return null;
+    const yearMatch = t.match(/\b(1[89]\d{2}|20\d{2})\b/);
+    return { month: monthIdx + 1, day, year: yearMatch ? Number(yearMatch[0]) : null };
+  }
+
+  function bdSetHeard(text) { $('bdHeard').textContent = text; }
+  function bdSetMicState(mode) { // 'idle' | 'listening'
+    $('bdMicBtn').classList.toggle('listening', mode === 'listening');
+    $('bdMicBtn').querySelector('.bd-mic-label').textContent =
+      mode === 'listening' ? 'Listening…' : 'Tap to speak';
+  }
+
+  let bdRecognizer = null;
+  // Browsers end a recognition session on their own well before someone has
+  // finished speaking a date — after one pause, or a fixed silence timeout
+  // even with `continuous`. bdListenSession lets a stale session's onend
+  // (from one we deliberately stopped) tell itself apart from one that
+  // should reopen the mic, so "keep listening" can mean it in practice.
+  let bdListenSession = 0;
+
+  function startListening() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { bdSetHeard("This browser can't listen — type it instead."); return; }
+    const session = ++bdListenSession;
+    let found = false;
+
+    const listenOnce = () => {
+      bdRecognizer = new SR();
+      bdRecognizer.lang = 'en-US';
+      bdRecognizer.continuous = true; // keep listening across pauses within one utterance
+      bdRecognizer.interimResults = false;
+      bdRecognizer.maxAlternatives = 3;
+
+      bdRecognizer.onresult = (e) => {
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const alts = [...e.results[i]].map((r) => r.transcript);
+          const parsed = alts.map(parseSpokenDate).find(Boolean);
+          if (parsed) {
+            found = true;
+            bdSetHeard(`Heard: “${alts[0]}”`);
+            bdRecognizer.stop();
+            handleBirthdateFound(parsed);
+            return;
+          }
+          bdSetHeard(`Heard "${alts[0]}" — still listening for a date…`);
+        }
+      };
+      bdRecognizer.onerror = (e) => {
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+          found = true; // permission denied — reopening the mic won't help
+          bdSetHeard('Microphone access was blocked — tap to try again, or type it instead.');
+          bdSetMicState('idle');
+        }
+        // Anything else (no-speech, network hiccups) is left to onend below,
+        // which reopens the mic rather than giving up on one bad chunk.
+      };
+      bdRecognizer.onend = () => {
+        if (found || session !== bdListenSession || state.birthdateStep !== 'ask') return;
+        listenOnce();
+      };
+      bdRecognizer.start();
+    };
+
+    bdSetMicState('listening');
+    bdSetHeard('Listening — take your time…');
+    listenOnce();
+  }
+
+  function handleBirthdateFound({ month, day, year }) {
+    state.birthDate = { month, day, year };
+    state.detectedZodiac = zodiacFromMonthDay(month, day);
+    setBirthdateStep('analyzing');
+    const delay = BD_DETECT_MIN_MS + Math.random() * (BD_DETECT_MAX_MS - BD_DETECT_MIN_MS);
+    clearTimeout(bdAdvanceTimer);
+    bdAdvanceTimer = setTimeout(() => setScene(3), delay);
+  }
+
+  let bdAdvanceTimer = null;
+  // Every time scene 2 is entered fresh, start back at the question — a
+  // previously entered date does not carry over into a new pass through it.
+  function startBirthdateScene() {
+    clearTimeout(bdAdvanceTimer);
+    bdListenSession++; // invalidate any in-flight recognition session's auto-restart
+    if (bdRecognizer) { bdRecognizer.abort(); bdRecognizer = null; }
+    $('birthdateForm').hidden = true;
+    $('birthdateInput').value = '';
+    $('bdMicBtn').hidden = false;
+    $('bdTypeInstead').hidden = false;
+    bdSetMicState('idle');
+    bdSetHeard('');
+    setBirthdateStep('ask');
+  }
+  function stopBirthdateScene() {
+    clearTimeout(bdAdvanceTimer);
+    bdListenSession++;
+    if (bdRecognizer) { bdRecognizer.abort(); bdRecognizer = null; }
+  }
+
+  /* --------------------------------------------------------- card scene --- */
+
+  // The sign is already known by scene 3 (scene 2 detected it) — it just
+  // isn't announced yet, so the art sits dim in the background. Falls back to
+  // the first sign if scene 3 is opened directly, e.g. via the scene switcher.
+  //
+  // The SVG is fetched and injected inline, rather than used as an <img>, so
+  // its individual stars and lines can be picked out and given their own
+  // glow (see .card-star / .card-lines in styles.css) — an <img> renders the
+  // file opaquely and can't be reached from CSS or JS.
+  async function renderCardScene() {
+    const abbrev = state.detectedZodiac || ZODIAC_ORDER[0];
+    const art = $('cardArt');
+    if (art.dataset.abbrev === abbrev) return; // already showing this sign
+    art.dataset.abbrev = abbrev;
+    try {
+      const res = await fetch(`assets/constellations/${ZODIAC_FILES[abbrev]}.svg`);
+      const text = await res.text();
+      const svgStart = text.indexOf('<svg');
+      art.innerHTML = text.slice(svgStart).replace(/<metadata>[\s\S]*?<\/metadata>/, '');
+      animateCardArt(art.querySelector('svg'));
+    } catch {
+      art.innerHTML = '';
+    }
+  }
+
+  // Each star glyph is a top-level <use> in the file; the join-the-dots lines
+  // are the one <g> with a dash pattern. Random delay/duration per star is
+  // what makes them twinkle out of sync with each other.
+  function animateCardArt(svg) {
+    if (!svg) return;
+    for (const el of svg.children) {
+      if (el.tagName === 'use') {
+        el.classList.add('card-star');
+        el.style.animationDelay = `${(Math.random() * 6).toFixed(2)}s`;
+        el.style.animationDuration = `${(4 + Math.random() * 3).toFixed(2)}s`;
+      }
+    }
+    const lines = svg.querySelector('g[stroke-dasharray]');
+    if (lines) lines.classList.add('card-lines');
+  }
+
+  /* ------------------------------------------------------- reveal scene --- */
+
+  // Same sign as scene 3, now announced: full brightness, name on the card,
+  // and its three traits set beside three of its own stars.
+  async function renderRevealScene() {
+    const abbrev = state.detectedZodiac || ZODIAC_ORDER[0];
+    const con = data.conByAbbrev[abbrev];
+    $('revealCard').textContent = con ? con.name : '';
+    const art = $('revealArt');
+    if (art.dataset.abbrev === abbrev) return;
+    art.dataset.abbrev = abbrev;
+    try {
+      const res = await fetch(`assets/constellations/${ZODIAC_FILES[abbrev]}.svg`);
+      const text = await res.text();
+      const svgStart = text.indexOf('<svg');
+      art.innerHTML = text.slice(svgStart).replace(/<metadata>[\s\S]*?<\/metadata>/, '');
+      placeRevealTraits(art.querySelector('svg'), ZODIAC_TRAITS[abbrev] || []);
+    } catch {
+      art.innerHTML = '';
+      $('revealTraits').innerHTML = '';
+    }
+  }
+
+  // Spreads the three traits across three of the constellation's own stars —
+  // first, middle and last in the file's drawing order, which in practice
+  // gives a scattered, not-clustered, set of anchor points — rather than
+  // hard-coding a pixel position per sign.
+  function placeRevealTraits(svg, traits) {
+    const container = $('revealTraits');
+    container.innerHTML = '';
+    if (!svg || !traits.length) return;
+    const vb = svg.viewBox.baseVal;
+    const uses = [...svg.children].filter((el) => el.tagName === 'use');
+    if (!uses.length) return;
+    const picks = uses.length === 1 ? [0, 0, 0]
+      : [0, Math.floor((uses.length - 1) / 2), uses.length - 1];
+    picks.forEach((idx, i) => {
+      const label = traits[i];
+      const m = /translate\(\s*(-?[\d.]+)\s+(-?[\d.]+)\s*\)/.exec(
+        uses[idx].getAttribute('transform') || '');
+      if (!label || !m) return;
+      const px = ((Number(m[1]) - vb.x) / vb.width) * 100;
+      const py = ((Number(m[2]) - vb.y) / vb.height) * 100;
+      const span = document.createElement('span');
+      span.className = 'reveal-trait';
+      span.textContent = label;
+      span.style.left = `${px}%`;
+      span.style.top = `${py}%`;
+      span.style.transform = px < 50
+        ? 'translate(30px, -50%)' : 'translate(calc(-100% - 30px), -50%)';
+      container.appendChild(span);
+    });
   }
 
   function conRow(abbrev) {
@@ -578,6 +975,56 @@
     $('turnLeft').addEventListener('click', () => turnBy(-45));
     $('turnRight').addEventListener('click', () => turnBy(45));
 
+    /* --- the scene switcher --- */
+    const bar = $('sceneBar');
+    bar.innerHTML = `
+      <div class="scene-pills">
+        ${SCENES.map((sc) => `<button class="scene-pill" data-scene="${sc.id}"
+            title="Scene ${sc.id}: ${sc.title}"><b>${sc.id}</b>${sc.label}</button>`).join('')}
+      </div>`;
+    bar.addEventListener('click', (e) => {
+      const pill = e.target.closest('.scene-pill');
+      if (pill) setScene(Number(pill.dataset.scene));
+    });
+
+    /* --- the zodiac slideshow (scene 1) --- */
+    buildZodiacTrack();
+    $('zodiacTrack').addEventListener('click', (e) => {
+      const slide = e.target.closest('.zodiac-slide');
+      if (!slide) return;
+      const idx = [...$('zodiacTrack').children].indexOf(slide);
+      if (idx === -1 || idx === state.zodiacIndex) return;
+      state.zodiacIndex = idx;
+      startZodiacSlideshow(); // jump there now, then give it a full dwell before moving on
+    });
+
+    /* --- the birthdate ask (scene 2) --- */
+    buildBirthdateGlyphs();
+    $('bdMicBtn').addEventListener('click', startListening);
+    $('bdTypeInstead').addEventListener('click', () => {
+      bdListenSession++;
+      if (bdRecognizer) { bdRecognizer.abort(); bdRecognizer = null; }
+      $('bdMicBtn').hidden = true;
+      $('bdTypeInstead').hidden = true;
+      bdSetHeard('');
+      $('birthdateForm').hidden = false;
+      $('birthdateInput').focus();
+    });
+    $('birthdateForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const value = $('birthdateInput').value; // yyyy-mm-dd
+      if (!value) return;
+      const [year, month, day] = value.split('-').map(Number);
+      handleBirthdateFound({ month, day, year });
+    });
+
+    /* --- the card prompt (scene 3) --- */
+    // Stands in for the card-detection model until it's wired up: a tap here
+    // is "the card was read", so it advances straight to the reveal.
+    $('cardScene').addEventListener('click', () => setScene(4));
+
+    updateSceneVisibility();
+
     /* --- the browse and settings overlay --- */
     const setPanel = (open) => {
       $('panel').hidden = !open;
@@ -653,7 +1100,7 @@
       showZodiac: 'tZodiac', showCircumpolar: 'tCircumpolar', showLines: 'tLines',
       showLabels: 'tLabels', showStarNames: 'tStarNames', showMilkyWay: 'tMilkyWay',
       showBackdrop: 'tBackdrop', showGround: 'tGround',
-      showGlyphs: 'tGlyphs', twinkle: 'tTwinkle',
+      showGlyphs: 'tGlyphs', twinkle: 'tTwinkle', showSceneBar: 'tSceneBar',
     };
     for (const [key, id] of Object.entries(toggles)) {
       const el = $(id);
@@ -694,7 +1141,10 @@
       }, () => { $('geoBtn').textContent = 'Location unavailable'; }, { timeout: 10000 });
     });
 
-    window.addEventListener('resize', () => draw());
+    window.addEventListener('resize', () => {
+      draw();
+      if (state.scene === 1) centerZodiacTrack(false);
+    });
     window.addEventListener('keydown', (e) => {
       if (e.target.matches('input, select, textarea')) return;
       switch (e.key) {
@@ -710,6 +1160,11 @@
         case '-': case '_': state.fov = clampFov(state.fov + 8); draw(); break;
         case ' ': e.preventDefault(); $('playBtn').click(); break;
         case 'n': case 'N': goLive(); break;
+        case '[': setScene(state.scene - 1); break;
+        case ']': setScene(state.scene + 1); break;
+        default:
+          if (/^[0-6]$/.test(e.key)) setScene(Number(e.key));
+          break;
       }
     });
   }
@@ -846,6 +1301,8 @@
     if (Number.isFinite(pitch)) state.pitch = state.targetPitch = clampPitch(pitch);
     const fov = parseFloat(q.get('fov'));
     if (Number.isFinite(fov)) state.fov = clampFov(fov);
+    const scene = parseInt(q.get('scene'), 10);
+    if (Number.isInteger(scene)) state.scene = Math.max(0, Math.min(SCENES.length - 1, scene));
     const t = q.get('t');
     if (t) {
       if (/[zZ]$|[+-]\d{2}:?\d{2}$/.test(t)) {
@@ -907,7 +1364,7 @@
 
   window.__sky = { state, get data() { return data; }, get frame() { return frame; },
                    get computed() { return computed; }, computeSky, draw, lookAt, select,
-                   openingMoment, DARK_ENOUGH };
+                   openingMoment, DARK_ENOUGH, SCENES, setScene };
 
   document.addEventListener('DOMContentLoaded', boot);
 })();
