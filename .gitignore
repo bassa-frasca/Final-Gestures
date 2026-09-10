@@ -5,3 +5,12 @@
 hyg*.csv
 hygdata_*.csv
 iau.json
+
+# Source video for the backdrop: far too large for the repo (GitHub caps files at
+# 100 MB). Keep the master local and commit only the compressed web loop.
+assets/*.mp4
+assets/*.mov
+assets/*.webm
+assets/*.m4v
+!assets/backdrop.mp4
+!assets/backdrop.webm

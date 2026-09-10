@@ -20,7 +20,7 @@ Outputs:
 Run:  python3 tools/build_data.py --hyg <hyg.csv> --iau <index.json> --out data/
 """
 
-import argparse, csv, json, os, sys
+import argparse, csv, json, os, re, sys
 
 # 12 zodiac + 5 circumpolar (as seen from mid-northern latitudes)
 ZODIAC = ["Ari","Tau","Gem","Cnc","Leo","Vir","Lib","Sco","Sgr","Cap","Aqr","Psc"]
@@ -38,12 +38,43 @@ ALL_SKY_MAG = 5.2
 HIP_TO_HD_FALLBACK = {55203: 98231}
 
 # Greek letter names -> symbols, for labelling Bayer-designated stars
+SUPERSCRIPT = {"": "", "1": "\u00b9", "2": "\u00b2", "3": "\u00b3",
+               "4": "\u2074", "5": "\u2075", "6": "\u2076",
+               "7": "\u2077", "8": "\u2078", "9": "\u2079"}
+
 GREEK = {
  "Alp":"α","Bet":"β","Gam":"γ","Del":"δ","Eps":"ε","Zet":"ζ",
  "Eta":"η","The":"θ","Iot":"ι","Kap":"κ","Lam":"λ","Mu":"μ",
  "Nu":"ν","Xi":"ξ","Omi":"ο","Pi":"π","Rho":"ρ","Sig":"σ",
  "Tau":"τ","Ups":"υ","Phi":"φ","Chi":"χ","Psi":"ψ","Ome":"ω",
 }
+
+
+def load_glyph_spec(path):
+    """
+    Star-glyph spec from tools/star-glyphs.json (supplied alongside the design).
+
+    The file lists a glyph id per star, but those values turn out to be fully
+    derivable: sorting a constellation's figure stars by magnitude and indexing
+    glyphOrder by (rank % len(glyphOrder)) reproduces all 110 of its assignments
+    exactly. So the rule is applied to our own catalogue rather than matching the
+    file star by star - our positions are the more precise of the two, and the rule
+    then also covers the constellations the file does not include.
+    """
+    spec = json.load(open(path, encoding="utf-8"))
+    order = spec["glyphOrder"]
+    radii = spec["glyphOuterRadius"]
+    if not order:
+        sys.exit("glyph spec has an empty glyphOrder")
+    return {
+        "order": order,
+        "outer_radius": radii,
+        # Suggested by the spec's notes; kept here so the renderer and the
+        # provenance stay in one place.
+        "scale_from_mag": {"base": 0.42, "pivot": 0.85, "slope": 0.055,
+                           "min": 0.16, "max": 0.42},
+        "source": os.path.basename(path),
+    }
 
 
 def load_iau_lines(path):
@@ -69,13 +100,14 @@ def star_label(row):
     bayer = (row.get("bayer") or "").strip()
     con = (row.get("con") or "").strip()
     if bayer:
-        # bayer may carry a superscript digit, e.g. "Alp1"
-        base, sup = bayer, ""
-        if base[-1].isdigit():
-            base, sup = base[:-1], base[-1]
-        sym = GREEK.get(base)
-        if sym:
-            return "%s%s %s" % (sym, sup, con) if con else sym + sup
+        # HYG spells a Bayer superscript as a trailing digit, sometimes hyphenated:
+        # "Alp1" and "Zet-1" both occur, so strip the digit and any separator.
+        m = re.match(r"^([A-Za-z]+)[-\s]?([0-9]?)$", bayer)
+        if m:
+            sym = GREEK.get(m.group(1))
+            if sym:
+                sup = SUPERSCRIPT.get(m.group(2), "")
+                return ("%s%s %s" % (sym, sup, con)).strip() if con else sym + sup
         return "%s %s" % (bayer, con)
     flam = (row.get("flam") or "").strip()
     if flam:
@@ -84,8 +116,9 @@ def star_label(row):
     return "HIP %s" % hip if hip else ""
 
 
-def build(hyg_path, iau_path, outdir, myths_path):
+def build(hyg_path, iau_path, outdir, myths_path, glyph_path=None):
     lines_by_con = load_iau_lines(iau_path)
+    glyphs = load_glyph_spec(glyph_path) if glyph_path else None
 
     # every HIP that a line figure needs — these must be kept no matter how faint
     needed_hip = set()
@@ -156,6 +189,18 @@ def build(hyg_path, iau_path, outdir, myths_path):
         star.pop("hip", None)      # only vertices need to stay identifiable
         stars.append(star)
 
+    # Decorative glyph per figure star, by brightness rank within its own figure.
+    if glyphs:
+        order = glyphs["order"]
+        for abbrev in TARGETS:
+            members = sorted(
+                {index_of_hip[int(h)] for poly in lines_by_con[abbrev]
+                 for h in poly if int(h) in index_of_hip},
+                key=lambda i: stars[i]["m"],
+            )
+            for rank, i in enumerate(members):
+                stars[i]["g"] = order[rank % len(order)]
+
     # Constellation figures: convert HIP polylines to index segment pairs.
     myths = json.load(open(myths_path, encoding="utf-8"))
     constellations = []
@@ -187,6 +232,8 @@ def build(hyg_path, iau_path, outdir, myths_path):
         "epoch": "J2000",
         "all_sky_mag_limit": ALL_SKY_MAG,
     }
+    if glyphs:
+        meta["glyphs"] = glyphs
     with open(os.path.join(outdir, "stars.json"), "w", encoding="utf-8") as fh:
         json.dump({"meta": meta, "stars": stars}, fh, separators=(",", ":"), ensure_ascii=False)
     with open(os.path.join(outdir, "constellations.json"), "w", encoding="utf-8") as fh:
@@ -213,6 +260,13 @@ def build(hyg_path, iau_path, outdir, myths_path):
           % (len(constellations), sum(len(c["lines"]) for c in constellations)))
     print("constellations represented in the star field: %d"
           % len({s["c"] for s in stars if s["c"]}))
+    if glyphs:
+        tally = {}
+        for st in stars:
+            if "g" in st:
+                tally[st["g"]] = tally.get(st["g"], 0) + 1
+        print("glyphs assigned: %d stars %s"
+              % (sum(tally.values()), dict(sorted(tally.items()))))
 
 
 if __name__ == "__main__":
@@ -220,6 +274,7 @@ if __name__ == "__main__":
     p.add_argument("--hyg", required=True)
     p.add_argument("--iau", required=True)
     p.add_argument("--myths", required=True)
+    p.add_argument("--glyphs", help="star-glyph spec (tools/star-glyphs.json)")
     p.add_argument("--out", default="data")
     a = p.parse_args()
-    build(a.hyg, a.iau, a.out, a.myths)
+    build(a.hyg, a.iau, a.out, a.myths, a.glyphs)

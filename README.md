@@ -46,6 +46,7 @@ The sky fills the window; everything else is an overlay that gets out of the way
 | **Read a story** | Click a constellation or its name; double-click zooms in on it. `Esc` closes |
 | **Browse them all** | The *Constellations* button, top right |
 | **Your sky** | City centre → dark countryside, which changes how many stars show |
+| **Star glyphs** | Decorative glyphs on the figure stars, on by default |
 | **Move location** | Anywhere on Earth, under *Where you are* |
 
 Because you can look anywhere on the sphere, the ground is drawn as a translucent
@@ -59,6 +60,8 @@ The view can also be set from the URL, which is how it is tested:
 ?lat=45.695&lon=9.670    observer position
 ?tz=Europe/Rome          IANA time zone
 ?facing=180              compass direction to look towards
+?pitch=28                how far up (or down, negative) to look
+?fov=110                 field of view in degrees
 ```
 
 ## What it draws
@@ -131,7 +134,7 @@ curl -L -o /tmp/hyg.csv https://raw.githubusercontent.com/astronexus/HYG-Databas
 curl -L -o /tmp/iau.json https://raw.githubusercontent.com/Stellarium/stellarium/master/skycultures/modern_iau/index.json
 
 python3 tools/build_data.py --hyg /tmp/hyg.csv --iau /tmp/iau.json \
-        --myths tools/mythology.json --out data
+        --myths tools/mythology.json --glyphs tools/star-glyphs.json --out data
 ```
 
 The 34 MB HYG catalogue is deliberately not committed — only the trimmed 17 kB
@@ -148,6 +151,39 @@ MIT. The underlying IAU star groupings are standard astronomical fact rather tha
 anyone's creative work, so if the GPL is inconvenient for redistribution the line
 lists can be rebuilt by hand from any IAU reference and the dependency drops away.
 Flagging it rather than quietly relabelling everything MIT.
+
+## Star glyphs
+
+The figure stars of the seventeen told constellations wear a decorative glyph —
+gold for the zodiac, grey-blue for the circumpolar five — while the rest of the sky
+stays plain white dots. That contrast is what makes the told constellations findable
+in a full naked-eye star field.
+
+The system comes from `tools/star-glyphs.json`, supplied with the design. It defines:
+
+- **`glyphOrder`** — a glyph id per star by brightness rank, `g4` (outer radius 180
+  against everyone else's 100) going to the brightest star of each figure.
+- **`glyphOuterRadius`** — collision radii in the glyph's own unit space.
+- **the size curve** — `clamp(0.42 - (mag - 0.85) * 0.055, 0.16, 0.42)`.
+
+Two things worth knowing about how it is applied:
+
+**The ids are derived, not copied.** Sorting a figure's stars by magnitude and
+indexing `glyphOrder` by `rank % 7` reproduces all 110 of the file's assignments
+exactly, so the rule is applied to this project's own catalogue instead of matching
+the file star by star. That keeps the more precise HYG positions, extends the system
+to the constellations the file does not cover, and guarantees the intent — brightest
+star always gets the big glyph. Where the two star selections coincide the ids agree;
+where this project's IAU figures carry more vertices the ranks legitimately differ.
+
+**The file carries no artwork**, only ids and radii, so the seven shapes are drawn in
+`js/sky.js` (`drawGlyph`), each in a unit space where `1.0` is the file's 100 units —
+so `g4` really does reach out to 1.8 and the spec's collision radii still hold.
+Dropping in real artwork means replacing those seven cases and nothing else.
+
+Glyphs hold a constant size on screen rather than a constant angular size: they are
+accents on a chart, not objects in the sky, and sizing them in degrees made them
+swell into stickers the moment you zoomed in. Turn them off under *What you can see*.
 
 ## The backdrop
 
@@ -196,6 +232,7 @@ data/catalog.js          generated: both payloads as globals, so file:// works
 assets/nebula.jpg        generated backdrop plate
 tools/build_data.py      the build script
 tools/mythology.json     the story content, edit this
+tools/star-glyphs.json   the glyph spec: ids, radii, size curve
 tools/make_nebula.html   draws the backdrop plate
 ```
 

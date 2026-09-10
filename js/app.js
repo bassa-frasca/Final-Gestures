@@ -47,6 +47,7 @@
     showMilkyWay: true,
     showBackdrop: true,
     showGround: true,
+    showGlyphs: true,
     showZodiac: true,
     showCircumpolar: true,
     twinkle: true,
@@ -72,7 +73,13 @@
     }
     const conByAbbrev = {};
     for (const c of consDoc.constellations) conByAbbrev[c.abbrev] = c;
-    return { stars: starsDoc.stars, constellations: consDoc.constellations, conByAbbrev };
+    // meta carries the glyph spec (glyphOrder, outer radii, the scale curve).
+    return {
+      stars: starsDoc.stars,
+      constellations: consDoc.constellations,
+      conByAbbrev,
+      meta: starsDoc.meta || {},
+    };
   }
 
   /* ------------------------------------------------------ sky computation --- */
@@ -634,7 +641,8 @@
     const toggles = {
       showZodiac: 'tZodiac', showCircumpolar: 'tCircumpolar', showLines: 'tLines',
       showLabels: 'tLabels', showStarNames: 'tStarNames', showMilkyWay: 'tMilkyWay',
-      showBackdrop: 'tBackdrop', showGround: 'tGround', twinkle: 'tTwinkle',
+      showBackdrop: 'tBackdrop', showGround: 'tGround',
+      showGlyphs: 'tGlyphs', twinkle: 'tTwinkle',
     };
     for (const [key, id] of Object.entries(toggles)) {
       const el = $(id);
@@ -731,6 +739,10 @@
     if (Number.isFinite(facing)) {
       state.facing = state.targetFacing = Astro.norm360(facing);
     }
+    const pitch = parseFloat(q.get('pitch'));
+    if (Number.isFinite(pitch)) state.pitch = state.targetPitch = clampPitch(pitch);
+    const fov = parseFloat(q.get('fov'));
+    if (Number.isFinite(fov)) state.fov = clampFov(fov);
     const t = q.get('t');
     if (t) {
       if (/[zZ]$|[+-]\d{2}:?\d{2}$/.test(t)) {

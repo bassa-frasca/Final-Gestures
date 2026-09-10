@@ -3,7 +3,35 @@
   "star_source": "HYG Database v4.1 (hygdata_v41.csv), astronexus/HYG-Database, public domain",
   "line_source": "Stellarium modern_iau sky culture (index.json), IAU-recognised figures",
   "epoch": "J2000",
-  "all_sky_mag_limit": 5.2
+  "all_sky_mag_limit": 5.2,
+  "glyphs": {
+   "order": [
+    "g4",
+    "g5",
+    "g3",
+    "g1",
+    "g2",
+    "g7",
+    "g6"
+   ],
+   "outer_radius": {
+    "g1": 100,
+    "g2": 100,
+    "g3": 98,
+    "g4": 180,
+    "g5": 100,
+    "g6": 100,
+    "g7": 100
+   },
+   "scale_from_mag": {
+    "base": 0.42,
+    "pivot": 0.85,
+    "slope": 0.055,
+    "min": 0.16,
+    "max": 0.42
+   },
+   "source": "star-glyphs.json"
+  }
  },
  "constellations": [
   {

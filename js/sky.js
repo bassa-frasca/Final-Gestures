@@ -79,11 +79,13 @@ const Sky = (() => {
     };
   }
 
-  // Half of the vertical field that must always fit on screen, in degrees. Without
-  // this, a wide short window (a laptop with the sidebar stacked below, say) gets a
-  // vertical field of only ~25 degrees, and the horizon and compass fall off the
-  // bottom entirely — you end up staring at empty sky with no way to orient.
+  // On a very wide, short window the vertical field can shrink so far that the
+  // horizon and compass fall off the bottom and there is no way to orient. This is
+  // the vertical half-field defended against that, at the reference zoom — and it
+  // scales with the requested field of view, because a fixed floor would override
+  // a deliberate zoom instead of merely protecting the wide default.
   const MIN_VERTICAL_HALF_FOV = 34;
+  const REFERENCE_FOV = 110;
 
   /**
    * Per-frame view parameters. `fovDeg` is the requested horizontal field; it is
@@ -100,8 +102,9 @@ const Sky = (() => {
     // less than the canvas height. Fit the sky to that, and lift the centre of view,
     // so the skyline and its compass labels stay clear of the controls.
     const usableH = Math.max(120, h - bottomInset);
+    const vHalf = MIN_VERTICAL_HALF_FOV * (fovDeg / REFERENCE_FOV);
     const rH = 2 * Math.tan((fovDeg / 2) * DEG / 2);
-    const rV = 2 * Math.tan(MIN_VERTICAL_HALF_FOV * DEG / 2);
+    const rV = 2 * Math.tan(vHalf * DEG / 2);
     // The smaller scale wins, i.e. whichever constraint demands more sky on screen.
     const scale = Math.min((w / 2) / rH, (usableH / 2) / rV);
     return {
@@ -374,6 +377,172 @@ const Sky = (() => {
     ctx.fill();
   }
 
+  /* -------------------------------------------------------- star glyphs --- */
+
+  /*
+   * Decorative glyphs drawn over the stars of the seventeen told constellations.
+   *
+   * The system comes from tools/star-glyphs.json: a glyph id per star chosen by
+   * brightness rank (rank 0, the brightest, gets g4 — the big one, outer radius
+   * 180 against everyone else's 100), and a size from magnitude via
+   * clamp(0.42 - (mag - 0.85) * 0.055, 0.16, 0.42).
+   *
+   * That file carries no artwork, only ids and radii, so the seven shapes are drawn
+   * here. Each is defined in a unit space where 1.0 is the file's 100 units, so g4
+   * genuinely reaches out to 1.8 and the collision radii in the spec still hold.
+   * Swapping in real artwork means replacing these seven cases and nothing else.
+   */
+
+  // Pixel length of one unit glyph radius at scale 1. Glyphs are deliberately NOT
+  // anchored to an angular size: they are decorative accents on the chart, not
+  // objects in the sky, so they hold a constant size on screen. Sizing them in
+  // degrees instead made them swell into stickers as soon as you zoomed in.
+  const GLYPH_BASE_PX = 33;
+  const GLYPH_PX_MIN = 2.2, GLYPH_PX_MAX = 17;
+
+  const glyphScaleFromMag = (mag) =>
+    Math.max(0.16, Math.min(0.42, 0.42 - (mag - 0.85) * 0.055));
+
+  /** An n-pointed star, alternating between long and short radii. */
+  function starPath(ctx, x, y, n, rLong, rShort, rot = -Math.PI / 2) {
+    ctx.beginPath();
+    for (let i = 0; i < n * 2; i++) {
+      const r = i % 2 === 0 ? rLong : rShort;
+      const a = rot + (i * Math.PI) / n;
+      const px = x + r * Math.cos(a);
+      const py = y + r * Math.sin(a);
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  }
+
+  /**
+   * Draw one glyph. `r` is the pixel length of one unit radius, so a shape reaching
+   * 1.8 in unit space is drawn out to 1.8 * r.
+   * @param {string} id one of g1..g7
+   * @param {number[]} tint constellation group colour
+   */
+  function drawGlyph(ctx, id, x, y, r, tint, alpha) {
+    ctx.save();
+    const line = rgb(tint, alpha);
+    const core = `rgba(255,253,246,${Math.min(1, alpha * 1.15)})`;
+
+    switch (id) {
+      case 'g4': {
+        // The brightest star of the figure: four long rays and four short ones.
+        const halo = ctx.createRadialGradient(x, y, 0, x, y, r * 1.8);
+        halo.addColorStop(0, rgb(tint, alpha * 0.30));
+        halo.addColorStop(0.3, rgb(tint, alpha * 0.09));
+        halo.addColorStop(1, rgb(tint, 0));
+        ctx.fillStyle = halo;
+        ctx.beginPath();
+        ctx.arc(x, y, r * 1.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        starPath(ctx, x, y, 4, r * 1.8, r * 0.28);
+        ctx.fillStyle = rgb(tint, alpha * 0.8);
+        ctx.fill();
+        starPath(ctx, x, y, 4, r * 0.58, r * 0.11, -Math.PI / 4);
+        ctx.fillStyle = line;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x, y, r * 0.2, 0, Math.PI * 2);
+        ctx.fillStyle = core;
+        ctx.fill();
+        break;
+      }
+      case 'g5':
+        starPath(ctx, x, y, 8, r, r * 0.21);
+        ctx.fillStyle = rgb(tint, alpha * 0.85);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x, y, r * 0.17, 0, Math.PI * 2);
+        ctx.fillStyle = core;
+        ctx.fill();
+        break;
+
+      case 'g3':
+        starPath(ctx, x, y, 6, r * 0.98, r * 0.19);
+        ctx.fillStyle = rgb(tint, alpha * 0.85);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x, y, r * 0.15, 0, Math.PI * 2);
+        ctx.fillStyle = core;
+        ctx.fill();
+        break;
+
+      case 'g1':
+        // A slim four-point sparkle.
+        starPath(ctx, x, y, 4, r, r * 0.11);
+        ctx.fillStyle = rgb(tint, alpha * 0.9);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x, y, r * 0.13, 0, Math.PI * 2);
+        ctx.fillStyle = core;
+        ctx.fill();
+        break;
+
+      case 'g7':
+        starPath(ctx, x, y, 5, r, r * 0.22);
+        ctx.fillStyle = rgb(tint, alpha * 0.85);
+        ctx.fill();
+        break;
+
+      case 'g2':
+        // Core inside a thin ring.
+        ctx.beginPath();
+        ctx.arc(x, y, r * 0.58, 0, Math.PI * 2);
+        ctx.strokeStyle = rgb(tint, alpha * 0.7);
+        ctx.lineWidth = Math.max(0.5, r * 0.075);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x, y, r * 0.24, 0, Math.PI * 2);
+        ctx.fillStyle = core;
+        ctx.fill();
+        break;
+
+      case 'g6':
+      default:
+        // The plainest of the seven: a core with four short ticks.
+        ctx.strokeStyle = rgb(tint, alpha * 0.8);
+        ctx.lineWidth = Math.max(0.6, r * 0.1);
+        for (let i = 0; i < 4; i++) {
+          const a = (i * Math.PI) / 2;
+          ctx.beginPath();
+          ctx.moveTo(x + Math.cos(a) * r * 0.42, y + Math.sin(a) * r * 0.42);
+          ctx.lineTo(x + Math.cos(a) * r * 0.85, y + Math.sin(a) * r * 0.85);
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.arc(x, y, r * 0.2, 0, Math.PI * 2);
+        ctx.fillStyle = core;
+        ctx.fill();
+        break;
+    }
+    ctx.restore();
+  }
+
+  /**
+   * Draw the collected glyphs, brightest first, skipping any that would collide.
+   * The spec flags Shaula and Lesath in Scorpius as ~0.2 degrees apart, which is a
+   * clash once they are wearing glyphs; this generalises that to every pair.
+   */
+  function drawGlyphs(ctx, candidates, outerRadius) {
+    candidates.sort((a, b) => a.mag - b.mag);
+    const placed = [];
+    for (const c of candidates) {
+      const outer = c.r * ((outerRadius[c.id] || 100) / 100);
+      let clash = false;
+      for (const p of placed) {
+        if (Math.hypot(c.x - p.x, c.y - p.y) < 0.62 * (outer + p.outer)) { clash = true; break; }
+      }
+      if (clash) continue;
+      placed.push({ x: c.x, y: c.y, outer });
+      drawGlyph(ctx, c.id, c.x, c.y, c.r, c.tint, c.alpha);
+    }
+    return placed.length;
+  }
+
   /* ------------------------------------------------------------- drawing --- */
 
   function render(canvas, state, data, computed, anim) {
@@ -452,6 +621,7 @@ const Sky = (() => {
 
     /* ---- stars ---- */
     const now = anim ? anim.t : 0;
+    const glyphCandidates = [];
     for (let i = 0; i < data.stars.length; i++) {
       const s = data.stars[i];
       const hz = starAltAz[i];
@@ -489,6 +659,17 @@ const Sky = (() => {
       const muted = state.selected && (!owner || owner.abbrev !== state.selected);
       drawStar(ctx, p, s.m, scale,
         starDim * edgeFade * limitFade * (muted ? 0.4 : 1), tw);
+
+      // Figure stars of a told constellation also carry a decorative glyph.
+      if (state.showGlyphs && s.g && owner) {
+        const px = glyphScaleFromMag(s.m) * GLYPH_BASE_PX * scale * tw;
+        const rPx = Math.max(GLYPH_PX_MIN, Math.min(GLYPH_PX_MAX, px));
+        glyphCandidates.push({
+          id: s.g, x: p.x, y: p.y, r: rPx, mag: s.m,
+          tint: owner.group === 'circumpolar' ? [176, 196, 222] : [236, 212, 148],
+          alpha: starDim * edgeFade * limitFade * (muted ? 0.3 : 0.92),
+        });
+      }
       // Only stars in a told constellation can open a story; the rest are
       // hoverable for their name but not clickable through to a panel.
       hit.stars.push({ x: p.x, y: p.y, r: starRadius(s.m, scale), star: s,
@@ -505,6 +686,12 @@ const Sky = (() => {
         ctx.fillText(s.n, p.x + 7 * scale, p.y);
         ctx.restore();
       }
+    }
+
+    /* ---- glyphs over the stars ---- */
+    if (state.showGlyphs && glyphCandidates.length) {
+      const spec = (data.meta && data.meta.glyphs) || {};
+      hit.glyphsDrawn = drawGlyphs(ctx, glyphCandidates, spec.outer_radius || {});
     }
 
     /* ---- Sun and Moon ---- */
@@ -657,5 +844,6 @@ const Sky = (() => {
     return best || namedOnly;
   }
 
-  return { render, pick, project, makeView, starRadius, galacticToEquatorial, COMPASS };
+  return { render, pick, project, makeView, starRadius, galacticToEquatorial,
+           drawGlyph, glyphScaleFromMag, COMPASS };
 })();
