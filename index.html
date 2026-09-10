@@ -45,8 +45,14 @@
           <button type="button" class="bd-choice" data-answer="yes">Yes</button>
           <button type="button" class="bd-choice" data-answer="hell yeah">Hell yeah</button>
         </div>
-        <!-- Filled in by JS, so it only ever claims to be listening when the mic is
-             genuinely open. The buttons stay either way. -->
+        <!-- The same listening pill scene 2 uses. Driven by JS, so it only ever
+             claims to be listening when the mic is genuinely open; the buttons
+             above stay usable either way. Not a button: nothing to tap here,
+             the mic opens on its own. -->
+        <div class="bd-mic zodiac-gate-mic" id="zodiacGateMic" role="status" hidden>
+          <span class="bd-mic-dot"></span>
+          <span class="bd-mic-label" id="zodiacGateMicLabel">Listening&hellip;</span>
+        </div>
         <p class="zodiac-gate-hint" id="zodiacGateHint" aria-live="polite"></p>
       </div>
     </div>
@@ -56,10 +62,13 @@
     <div id="birthdateScene" class="birthdate-scene" hidden aria-live="polite">
       <div class="bd-slide bd-ask" data-step="ask">
         <p class="bd-question">Let&rsquo;s hear your birth date?</p>
-        <button type="button" id="bdMicBtn" class="bd-mic" aria-label="Tap to speak your birth date">
+        <!-- A status read-out, not a control: the mic opens by itself once the
+             question has been asked, so there is nothing to tap. Kept as the same
+             element id so the listening state still drives it. -->
+        <div id="bdMicBtn" class="bd-mic" role="status">
           <span class="bd-mic-dot"></span>
-          <span class="bd-mic-label">Tap to speak</span>
-        </button>
+          <span class="bd-mic-label">Listening&hellip;</span>
+        </div>
         <p class="bd-heard" id="bdHeard" aria-live="polite"></p>
         <button type="button" id="bdTypeInstead" class="bd-linklike">or type it instead</button>
         <form id="birthdateForm" class="bd-form" hidden>
