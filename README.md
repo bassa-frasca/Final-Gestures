@@ -46,18 +46,20 @@ The sky fills the window; everything else is an overlay that gets out of the way
 | **Look around** | Drag the sky, use `←` `→` `↑` `↓`, or the N/E/S/W buttons |
 | **Zoom** | Pinch, scroll, or `+` / `-` — 25° to 160° field of view |
 | **Look below the horizon** | Keep dragging down. Constellations that have already set stay drawn, dimmed under the ground, so you can go and find them |
-| **Scrub time** | The two sliders along the bottom — time of night, then time of year |
+| **Scrub time** | *Time* at the top of the **Explore** panel — night, then year |
 | **Watch it move** | `Play` — up to a week a second, to see the seasonal handoff |
 | **Back to now** | `Now`, or press `N` |
 | **Read a story** | Click a constellation or its name; double-click zooms in on it. `Esc` closes |
-| **Browse them all** | The *Constellations* button, top right |
+| **Browse them all** | The **Explore** button, top right |
 | **Your sky** | City centre → dark countryside, which changes how many stars show |
 | **Star glyphs** | Decorative glyphs on the figure stars, on by default |
 | **Move location** | Anywhere on Earth, under *Where you are* |
 
-The sliders carry no labels: the clock and date in the top corner are the single
-source of truth, and repeating them under the sliders was just noise. Hovering either
-one still names it, and both keep an accessible name for screen readers.
+Nothing sits over the sky but the clock in one corner and the compass in the other.
+Every control — time, the constellation lists, what you can see, where you are — lives
+in the **Explore** panel, which takes the right third and leaves the sky watchable
+while you scrub. Hovering either slider names it and gives its value, and both keep an
+accessible name for screen readers.
 
 Because you can look anywhere on the sphere, the ground is drawn as a translucent
 veil rather than an opaque floor — it darkens what is beneath you the way the Earth
@@ -195,6 +197,28 @@ Glyphs hold a constant size on screen rather than a constant angular size: they 
 accents on a chart, not objects in the sky, and sizing them in degrees made them
 swell into stickers the moment you zoomed in. Turn them off under *What you can see*.
 
+### Dropping in real artwork
+
+`drawGlyph()` in `js/sky.js` has one `case` per glyph id, and that is the only place
+that needs to change. To supply artwork instead, put one file per id in
+`assets/glyphs/` named `g1` … `g7`. SVG is preferable — crisp at any zoom, tintable,
+about a kilobyte each — but PNG at 512×512 works.
+
+Either way:
+
+- **Square canvas, artwork centred.** The centre of the image *is* the star's
+  position, so anything drawn off-centre will sit off its star.
+- **Transparent background.**
+- **One colour** (white or black), no baked-in hue — the renderer tints each glyph
+  gold for the zodiac and grey-blue for the circumpolar five.
+- **Consistent padding across all seven**, so `glyphOuterRadius` still describes the
+  art. `g4` is specified at 180 against everyone else's 100, so draw it 1.8× larger
+  *within the same canvas size* rather than letting each glyph fill its own canvas
+  edge to edge — otherwise they all come out the same size on screen.
+
+For SVG, a square `viewBox` with paths only (no embedded raster, no `<image>`), and
+either plain white fills or `fill="currentColor"`.
+
 ## The backdrop
 
 Behind the live sky runs a loop of deep-space footage, `assets/backdrop.mp4`, blurred
@@ -203,28 +227,38 @@ daylit sky, holds still if you have asked for reduced motion, and can be switche
 under *What you can see*. `assets/nebula.jpg` is its poster, so a still shows while
 the video loads and stands in if it cannot play at all.
 
-The blur is doing real work, not decoration: the footage is full of its own painted
-stars, which would otherwise read as a second, fictional star field fighting the real
-catalogue drawn on top. Blurring melts them into pure colour and depth — which is
-also why a 640×360 loop is indistinguishable from a 720p one here.
+A whisper of blur (0.8px) takes the hard edge off the footage's own painted stars,
+which would otherwise read as a second star field competing with the real catalogue
+drawn on top. What actually keeps the live stars dominant is that they are brighter,
+carry a glow, and wear glyphs — so the backdrop can stay sharp and legibly itself.
 
 ### Cutting the loop down
 
-The source footage was 1920×1080, forty minutes long, 909 MB — far past GitHub's
-100 MB per-file limit and hopeless as a web backdrop. A twenty-second loop at 640×360
-is 8.8 MB. macOS can do this without installing anything:
+The source footage is 1920×1080, forty minutes long, 909 MB — far past GitHub's
+100 MB per-file limit. But a short cut of it is small without giving up anything,
+because `PresetPassthrough` copies the streams instead of re-encoding them: the loop
+is bit-identical to the source, at full 1920×1080, and a 24-second cut is 21 MB.
+macOS can do this with nothing installed:
 
 ```bash
 avconvert --source videoplayback.mp4 --output assets/backdrop.mp4 \
-          --preset Preset640x480 --start 600 --duration 20 --replace
+          --preset PresetPassthrough --start 600 --duration 24 --replace
 ```
 
-`--start` picks the moment to cut from. With ffmpeg available, a crossfade between
-the loop's head and tail would hide the seam; as it stands the cut is invisible
-enough behind a 4 px blur.
+`--start` picks the moment to cut from, `--duration` how long the loop runs; halve
+the duration to halve the file. Reach for a re-encoding preset
+(`Preset1280x720` and friends) only if you actually want a smaller frame — they cost
+real quality, and they can *raise* the bitrate well above the source's.
 
-`.gitignore` excludes `assets/*.mp4` with an exception for `backdrop.mp4`, so a large
-source file dropped into `assets/` can never be committed by accident.
+Passthrough cuts land on keyframes, so the start may snap by a fraction of a second.
+With ffmpeg available, a crossfade between the loop's head and tail would hide the
+seam entirely.
+
+`.gitignore` excludes `assets/*.mp4` with an exception for `backdrop.mp4`, so the
+909 MB source can never be committed by accident while the loop still ships. Bear in
+mind that every version of the loop you commit stays in git history for good — if you
+plan to iterate on the footage a lot, better to keep it out of git and host it
+somewhere else, pointing the `<video>` at that URL.
 
 ### The generated fallback plate
 

@@ -182,10 +182,9 @@
   let animClock = 0;
   function draw(dtSeconds = 0) {
     animClock += dtSeconds;
-    // The time strip overlays the canvas; tell the projection how much room it takes
-    // so the horizon is never hidden behind the controls.
-    const strip = document.querySelector('.tline');
-    state.bottomInset = strip ? strip.offsetHeight : 0;
+    // The time controls used to overlay the bottom of the sky; now that they live in
+    // the panel, the sky is edge to edge and there is nothing to reserve room for.
+    state.bottomInset = 0;
     computed = computeSky(state.date);
     frame = Sky.render($('sky'), state, data, computed,
       { t: animClock, twinkle: state.twinkle });

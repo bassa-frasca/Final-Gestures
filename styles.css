@@ -61,11 +61,12 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
   width: 100%; height: 100%;
   object-fit: cover;
   opacity: 0.62;
-  /* The footage is full of its own painted stars, which would read as a second,
-     fictional star field fighting the real catalogue drawn on top. A firm blur
-     melts them into pure colour and depth, which is all the backdrop is for — and
-     it is why the loop can be 640x360 without anyone noticing. */
-  filter: blur(4px) saturate(1.06);
+  /* Only a whisper of blur, so the footage stays legibly itself. It is there to
+     take the hard edge off the video's own painted stars, which otherwise read as a
+     second star field competing with the real catalogue drawn on top — the live
+     stars are brighter, glow, and carry glyphs, which is what keeps them dominant
+     now that the backdrop is sharp. */
+  filter: blur(0.8px) saturate(1.06);
   transform: scale(1.06);
   animation: drift 90s ease-in-out infinite alternate;
 }
@@ -153,16 +154,13 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
   text-shadow: 0 1px 8px rgba(2, 4, 9, 0.9);
 }
 
-/* ------------------------------------------------------------ time strip --- */
+/* --------------------------------------------------- time, in the panel --- */
 
-.hud-b { bottom: 0; left: 0; right: 0; }
-.tline {
-  display: flex; align-items: center; gap: 22px;
-  padding: 26px 24px 16px;
-  background: linear-gradient(180deg, transparent, rgba(3, 5, 10, 0.82) 60%);
-}
-.tslider { flex: 1 1 0; min-width: 0; }
-.tbtns { display: flex; gap: 7px; align-items: center; flex: 0 0 auto; }
+.tline { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; }
+.tslider { width: 100%; }
+.tbtns { display: flex; gap: 7px; align-items: center; margin-top: 8px; }
+.tbtns .sel { flex: 1 1 0; min-width: 0; }
+.tbtns .btn { flex: 0 0 auto; }
 
 input[type="range"] {
   -webkit-appearance: none; appearance: none;
@@ -385,8 +383,4 @@ input.bad { border-color: var(--bad); background: rgba(224, 115, 107, 0.14); }
   .phrase { font-size: 12px; max-width: 250px; }
   .phrase.moon { display: none; }
 
-  .tline { flex-wrap: wrap; gap: 4px 12px; padding: 18px 14px 12px; }
-  .tslider { flex-basis: 100%; }
-  .tbtns { width: 100%; margin-top: 4px; }
-  .tbtns .sel { flex: 1 1 0; }
 }
