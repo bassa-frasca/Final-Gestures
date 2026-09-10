@@ -208,7 +208,11 @@
     $('nightPhrase').textContent = nightPhrase();
     $('moonPhrase').textContent = moonPhrase();
     $('facingText').textContent = `looking ${dirWord(state.facing)}`;
-    $('liveDot').classList.toggle('on', state.live);
+    const dot = $('liveDot');
+    dot.classList.toggle('on', state.live);
+    dot.title = state.live
+      ? 'Following the real clock'
+      : 'Showing a chosen moment — press N, or Now in Explore, for the live sky';
     for (const b of document.querySelectorAll('.cbtn')) {
       const az = Number(b.dataset.az);
       let d = Math.abs(Astro.norm360(state.facing - az));
@@ -751,6 +755,54 @@
     sel.value = state.tz;
   }
 
+  /* ------------------------------------------------------ opening on night --- */
+
+  // Below this Sun altitude the sky is dark enough for the constellations to read.
+  const DARK_ENOUGH = -15;
+
+  /**
+   * The instant to open on. This is a stargazing view, so it should open on a dark
+   * sky rather than on whatever the clock happens to say — arriving at three in the
+   * afternoon and being shown a washed-out blue sky is a poor introduction to the
+   * constellations.
+   *
+   * If it is already properly dark, the real moment is the best possible view and
+   * live mode stays on. Otherwise the view jumps to the coming night, settling about
+   * ninety minutes after darkness falls so the sky has risen clear of the horizon
+   * murk. The date moves no further than it must, so what you see is genuinely
+   * tonight's sky and the seasonal picture stays honest.
+   *
+   * @returns {{date: Date, live: boolean}}
+   */
+  function openingMoment(now) {
+    if (Astro.sunAltitude(now, state.lat, state.lon) <= DARK_ENOUGH) {
+      return { date: now, live: true };     // already dark: nothing beats the real sky
+    }
+
+    const STEP_MIN = 10;
+    const SETTLE_MIN = 90;
+    let firstDark = null;
+    let darkest = { time: now, alt: Infinity };
+
+    // A full day of samples, which also covers the awkward cases: a summer
+    // afternoon, and high-latitude white nights where it never gets properly dark.
+    for (let m = 0; m <= 24 * 60; m += STEP_MIN) {
+      const t = new Date(now.getTime() + m * 60000);
+      const alt = Astro.sunAltitude(t, state.lat, state.lon);
+      if (alt < darkest.alt) darkest = { time: t, alt };
+      if (firstDark === null && alt <= DARK_ENOUGH) firstDark = t;
+    }
+
+    // Never gets properly dark here tonight — a polar summer. Show the darkest it
+    // will get, which the readout will describe honestly as twilight.
+    if (firstDark === null) return { date: darkest.time, live: false };
+
+    // Don't settle so late that dawn is already washing the sky out again.
+    const settled = new Date(firstDark.getTime() + SETTLE_MIN * 60000);
+    const stillDark = Astro.sunAltitude(settled, state.lat, state.lon) <= DARK_ENOUGH;
+    return { date: stillDark ? settled : darkest.time, live: false };
+  }
+
   /* -------------------------------------------------------- URL injection --- */
 
   function applyUrlParams() {
@@ -801,7 +853,14 @@
         '(python3 -m http.server) or rebuild data/catalog.js. ' + err;
       return;
     }
+    const timeWasInjected = new URLSearchParams(location.search).has('t');
     applyUrlParams();
+    // Open on a dark sky, unless the URL asked for a specific moment.
+    if (!timeWasInjected) {
+      const opening = openingMoment(new Date());
+      state.date = opening.date;
+      state.live = opening.live;
+    }
     fillLocationInputs();
     syncTimeInputs();
     wire();
@@ -823,7 +882,8 @@
   }
 
   window.__sky = { state, get data() { return data; }, get frame() { return frame; },
-                   get computed() { return computed; }, computeSky, draw, lookAt, select };
+                   get computed() { return computed; }, computeSky, draw, lookAt, select,
+                   openingMoment, DARK_ENOUGH };
 
   document.addEventListener('DOMContentLoaded', boot);
 })();

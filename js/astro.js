@@ -242,6 +242,21 @@ const Astro = (() => {
     };
   }
 
+  /**
+   * Just the Sun's altitude, in degrees. Separate from sunMoon() because searching
+   * for nightfall samples a whole day, and there is no reason to compute the Moon a
+   * hundred and forty times over to find out when it gets dark.
+   */
+  function sunAltitude(date, latDeg, lonDeg) {
+    const jd = julianDay(date);
+    const lstDeg = lst(jd, lonDeg);
+    const eng = usableEngine();
+    const eq = eng
+      ? eng.Equator(eng.Body.Sun, date, new eng.Observer(latDeg, lonDeg, 0), true, true)
+      : sunEquatorialFallback(jd);
+    return equatorialToHorizontal(eq.ra, eq.dec, lstDeg, latDeg).alt;
+  }
+
   function moonPhaseName(illum, waxing) {
     if (illum < 0.02) return 'New Moon';
     if (illum > 0.98) return 'Full Moon';
@@ -323,7 +338,7 @@ const Astro = (() => {
     DEG, RAD, norm360,
     julianDay, gmst, lst,
     precessFromJ2000, equatorialToHorizontal, starAltAz, eclipticToEquatorial, refraction,
-    sunMoon, twilight, moonPhaseName, ephemerisSource, usableEngine,
+    sunMoon, sunAltitude, twilight, moonPhaseName, ephemerisSource, usableEngine,
     zoneOffsetMinutes, zonedParts, instantFromZoned, formatOffset,
     compassPoint,
   };

@@ -21,6 +21,20 @@ It is live at <https://roshnidesigns.github.io/Tales-from-Stars/>, served straig
 from `main` by GitHub Pages — `.nojekyll` keeps Jekyll from touching the static
 files.
 
+It opens on a **dark sky**, not on whatever the clock happens to say. Arriving at
+three in the afternoon and being shown a washed-out blue sky is a poor introduction
+to the constellations, so if it is not currently dark the view jumps to the coming
+night — settling about ninety minutes after darkness falls, so the sky has risen
+clear of the horizon murk. If it *is* already dark, nothing beats the real sky, so
+live mode stays on and the clock keeps running. `Now` (or `N`) always returns to the
+real moment, and `?t=` in the URL overrides the whole thing.
+
+Two edge cases are handled rather than assumed away. Under a **midnight sun** there
+is no dark moment to jump to, so it shows the darkest the sky will get and the
+readout says plainly that it is still daylight. In **high summer at mid-latitudes**
+full darkness genuinely arrives after midnight, so the date may read as tomorrow —
+which is correct: that is tonight's sky.
+
 Locally there is no build step and nothing to install.
 
 ```bash
@@ -48,7 +62,7 @@ The sky fills the window; everything else is an overlay that gets out of the way
 | **Look below the horizon** | Keep dragging down. Constellations that have already set stay drawn, dimmed under the ground, so you can go and find them |
 | **Scrub time** | *Time* at the top of the **Explore** panel — night, then year |
 | **Watch it move** | `Play` — up to a week a second, to see the seasonal handoff |
-| **Back to now** | `Now`, or press `N` |
+| **Back to now** | `Now`, or press `N` — it opens on tonight's dark sky, not the current hour |
 | **Read a story** | Click a constellation or its name; double-click zooms in on it. `Esc` closes |
 | **Browse them all** | The **Explore** button, top right |
 | **Your sky** | City centre → dark countryside, which changes how many stars show |
